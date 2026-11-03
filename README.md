@@ -105,3 +105,9 @@ as an artifact. Locally:
 The release build is **debug-signed** so CI can produce an installable APK
 without a secret key. Swap in a real signing config before publishing
 anything you intend to update in place.
+
+## Licence
+
+© 2026 Dr.Essence, under the [0BSD licence](LICENSE): use, copy, change and
+share it for any purpose, no conditions. The clean edition draws Nothing's
+NDot font from the phone at runtime; no Nothing font ships in this app.
