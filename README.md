@@ -1,4 +1,29 @@
+<p align="center"><img src="docs/banner.png" alt="CMF Stereo manager" width="100%"></p>
+
 # CMF-true-stereo-manager
+
+**The app for [CMF-true-stereo](https://github.com/Dr-Essence/CMF-true-stereo)**
+— real left/right stereo on the CMF Phone 1, controlled without a terminal.
+
+<p align="center">
+  <a href="https://github.com/Dr-Essence/CMF-true-stereo-manager/releases/latest"><b>Download the app</b></a> ·
+  <a href="https://github.com/Dr-Essence/CMF-true-stereo/releases/latest"><b>Get the module</b></a>
+</p>
+
+| | **CMF Stereo** | **CMF Stereo Pro** |
+|---|---|---|
+| Who it is for | everyone | tinkerers |
+| What you get | on/off, Mono/Stereo, earpiece and speaker level 1–10 | everything, in raw values, plus developer tools |
+| Look | Nothing style: black, NDot type in glowing green | Material dark |
+| File | `CMF-true-stereo-clean-….apk` | `CMF-true-stereo-pro-….apk` |
+
+Install either or both — they sit side by side. You need root and the
+[module](https://github.com/Dr-Essence/CMF-true-stereo/releases/latest)
+flashed first.
+
+---
+
+## About
 
 A small root app for controlling the
 [CMF-true-stereo](https://github.com/Dr-Essence/CMF-true-stereo) Magisk
