@@ -15,17 +15,20 @@ object Help {
             HelpEntry(
                 "What this module does",
                 "It plays media through the earpiece as well as the bottom speaker, " +
-                    "so both drivers are producing sound at once. Louder, fuller and " +
-                    "taller than the single bottom-firing speaker.",
+                    "so both drivers are producing sound at once. In Mono (the default) " +
+                    "both play the full mix: louder, fuller and taller than the single " +
+                    "bottom-firing speaker. In Stereo the earpiece plays the left " +
+                    "channel and the speaker the right.",
                 "overview intro what"
             ),
             HelpEntry(
-                "What it is NOT",
-                "It is not left/right stereo. Both transducers are fed from the same " +
-                    "mixer channel (DL_24CH_CH1), and no arrangement of the available " +
-                    "controls puts different channels on them. That was measured, not " +
-                    "assumed - see 'Why no true stereo'.",
-                "stereo fake pseudo channels"
+                "Mono or stereo",
+                "Mono is stock audio with Awinic's speaker protection. Stereo gives real " +
+                    "left/right (earpiece left, speaker right) by switching off the two " +
+                    "places the phone folds the speaker to mono, and replaces Awinic's " +
+                    "protection on media with a fixed amp attenuation. Use Mono for loud " +
+                    "listening. Switching needs a reboot. See 'Where the mono fold is'.",
+                "stereo mono channels left right"
             ),
             HelpEntry(
                 "Everyday use",
@@ -60,7 +63,8 @@ object Help {
             HelpEntry("diff [seconds]", "Snapshots the mixer, waits, then shows what changed. Start or stop playback during the wait: this is how the media path on this device was found in the first place.", "diff snapshot compare"),
             HelpEntry("probe [dir]", "Full hardware dump - ALSA topology, all mixer controls, amplifier drivers, HAL configs, MediaTek's AudioParam tree. Only needed on hardware the module has not been mapped on. It is slow (a minute or two).", "probe dump hardware"),
             HelpEntry("report", "Folds the newest probe into one shareable text file at /sdcard/cmf-stereo-report.txt.", "report share"),
-            HelpEntry("xml-patch / xml-revert", "Overlays an audio policy that widens the speaker port to stereo. DO NOT use it on the CMF Phone 1: the mono speaker port is what makes the framework sum L+R, so widening it would drop the right channel entirely. It exists for other hardware.", "xml policy danger")
+            HelpEntry("channels [mono|stereo]", "Shows the running and staged channel mode, or stages one. Stereo patches this phone's own audio HAL and DSP config in the module overlay after SHA-256 checks against the analysed build, and refuses anything else. Takes effect after a reboot; two failed boots revert to mono. Needs module v0.9.0+.", "channels stereo mono"),
+            HelpEntry("xml-patch / xml-revert", "Overlays an audio policy that widens the speaker port to stereo. On the CMF Phone 1 it is a no-op: the speaker port is already stereo. It exists for other hardware.", "xml policy")
         ),
 
         "Settings (stereo.conf)" to listOf(
@@ -68,6 +72,8 @@ object Help {
             HelpEntry("PLAYBACK_CTL / PLAYBACK_VALUE", "How 'audio is playing' is detected. Empty means scan /proc/asound for a RUNNING substream, which misses DSP-offload playback entirely. On this device media IS offloaded, so it is set to dsp_music_runtime_en - without which MODE=playback never engages while MODE=always works.", "playback detect offload"),
             HelpEntry("GUARD_CTL / GUARD_VALUE", "Apply the routing only while this control holds this value. Set to aw_dev_0_switch = Enable here, so the earpiece follows the speaker amp.", "guard"),
             HelpEntry("WATCH_INTERVAL", "How often the routing is re-asserted, in seconds. The HAL resets mixer controls on every route change, so this cannot be large. 2 is the default.", "interval poll"),
+            HelpEntry("CHANNELS", "mono or stereo. Set it with the Channels switch or 'stereoctl channels' rather than by hand: stereo needs files staged, and both need a reboot.", "channels stereo mono"),
+            HelpEntry("STEREO_ATTEN_DB", "In stereo, the speaker amp is held at least this many dB down (0-30, default 6) through its own volume control, aw_dev_0_volume, which counts in 1/8 dB steps. It is the margin that stands in for Awinic's protection. Read every cycle, no restart needed.", "attenuation stereo volume"),
             HelpEntry("LOG_LEVEL", "debug, info or warn.", "log level"),
             HelpEntry("actions.conf syntax", "One action per line, applied in order:\n\n  ctl|<mixer control>|<value>\n  sysfs|<path>|<value>\n  prop|<property>|<value>\n\nThe original value of everything touched is saved and restored on stop.", "actions config syntax")
         ),
@@ -86,17 +92,21 @@ object Help {
                 "routing how works adda rcv"
             ),
             HelpEntry(
-                "Why no true stereo",
-                "Four independent findings:\n\n" +
-                    "1. Speaker takes I2SOUT4_CH1 <- DL_24CH_CH1 only, and I2SOUT4_CH1 " +
-                    "has no DL_24CH_CH2 source available.\n" +
-                    "2. Earpiece takes RCV <- ADDA_DL_CH1 <- DL_24CH_CH1 only. Feeding " +
-                    "ADDA_DL_CH2 instead leaves the path unpowered.\n" +
-                    "3. Only one Awinic device (aw_dev_0) - no second amp channel.\n" +
-                    "4. MediaTek's 2nd-loudspeaker parameters are present but entirely " +
-                    "zeroed, and 2nd-ACF is a filter feature, not a routing one.\n\n" +
-                    "True stereo would need a custom kernel adding a DAPM route.",
-                "stereo why not channels split"
+                "Where the mono fold is",
+                "Measured with a left-only test file and the amp on its right slot " +
+                    "(silence there = channels really separate):\n\n" +
+                    "- Android output: stereo. The speaker port is already stereo.\n" +
+                    "- Dirac: not the fold; removing it alone changed nothing.\n" +
+                    "- MediaTek HAL: folds. doStereoToMonoConversionIfNeed writes " +
+                    "(L+R)/2 when the phone is set up for one speaker.\n" +
+                    "- Awinic speaker protection on the audio DSP (smartpa_awinic): " +
+                    "folds. One speaker model, 0.5/0.5 weights in every preset.\n" +
+                    "- Routing and amp: stereo. Register 0x06 bits 11:10 pick the amp's " +
+                    "slot (left / right / mono).\n\n" +
+                    "With both folds off the right slot went silent: real stereo. The " +
+                    "earpiece always takes the left channel - its DAC input has no " +
+                    "right-channel source. A kernel was never the limit.",
+                "stereo why channels split fold dsp hal"
             ),
             HelpEntry(
                 "How loud it can go, and why that is the ceiling",
@@ -128,7 +138,10 @@ object Help {
             ),
             HelpEntry(
                 "Safety",
-                "The earpiece is a receiver: no protection circuit, no excursion limit, " +
+                "In Stereo, Awinic's speaker protection is off for media: the speaker " +
+                    "relies on the amp's hardware cut-outs and the stereo attenuation. " +
+                    "Use Mono for loud listening.\n\n" +
+                    "The earpiece is a receiver: no protection circuit, no excursion limit, " +
                     "no thermal cutoff. Distortion, buzz or rattle means back off " +
                     "immediately - that damage is permanent, and it also costs you the " +
                     "earpiece for phone calls. If you run it loud for hours, check " +

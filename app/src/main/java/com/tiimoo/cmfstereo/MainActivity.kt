@@ -211,6 +211,14 @@ private fun ControlTab(
             StatusRow("Daemon", if (s.daemonRunning) "running" else "stopped", s.daemonRunning)
             StatusRow("Playback", if (s.playing) "active" else "idle", true)
             StatusRow("Mode", s.mode, true)
+            if (s.supportsChannels) {
+                StatusRow(
+                    "Channels",
+                    if (s.channels == s.channelsStaged) s.channels
+                    else "${s.channels} -> ${s.channelsStaged} after reboot",
+                    s.channels == s.channelsStaged
+                )
+            }
             StatusRow("Routing", "${s.actionCount} actions", s.actionCount > 0)
             StatusRow("Gain", s.gain?.toString() ?: "unreadable", s.gain != null)
             StatusRow("Guard", if (s.guardBypassed) "bypassed" else "active", true)
@@ -218,6 +226,8 @@ private fun ControlTab(
             StatusRow("App", BuildConfig.VERSION_NAME, true)
         }
     }
+
+    if (s.supportsChannels) ChannelsCard(s, busy, action)
 
     Card {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -306,6 +316,117 @@ private fun ControlTab(
 }
 
 @Composable
+private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, () -> String) -> Unit) {
+    var confirmStereo by remember { mutableStateOf(false) }
+    var confirmReboot by remember { mutableStateOf(false) }
+    var atten by remember(s.stereoAttenDb) { mutableStateOf(s.stereoAttenDb) }
+    val pending = s.channels != s.channelsStaged
+
+    Card {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Channels", style = MaterialTheme.typography.titleMedium)
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                listOf("mono" to "Mono", "stereo" to "Stereo").forEachIndexed { i, (v, l) ->
+                    SegmentedButton(
+                        selected = s.channelsStaged == v,
+                        onClick = {
+                            if (v == "stereo") confirmStereo = true
+                            else action("channels") { StereoCtl.setChannels(false) }
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(i, 2),
+                        enabled = !busy && s.channelsStaged != v
+                    ) { Text(l) }
+                }
+            }
+            Text(
+                if (s.channelsStaged == "stereo")
+                    "Stereo: earpiece plays the left channel, speaker the right. Hold " +
+                        "the phone with the earpiece on your left. Awinic's speaker " +
+                        "protection is off for media; the amp is held " +
+                        "${s.stereoAttenDb} dB down instead. Calls keep protection."
+                else
+                    "Mono: stock audio. Both drivers play the full mix, with Awinic's " +
+                        "speaker protection.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            if (pending) {
+                Text(
+                    "Running ${s.channels} until you reboot.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Button(onClick = { confirmReboot = true }, enabled = !busy) { Text("Reboot now") }
+            }
+
+            if (s.channelsStaged == "stereo") {
+                HorizontalDivider()
+                Text("Stereo attenuation (dB)", style = MaterialTheme.typography.titleSmall)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = atten,
+                        onValueChange = { atten = it.filter { c -> c.isDigit() }.take(2) },
+                        modifier = Modifier.width(110.dp),
+                        singleLine = true,
+                        enabled = !busy
+                    )
+                    Button(
+                        onClick = { action("attenuation") { StereoCtl.setStereoAtten(atten.toIntOrNull() ?: 6) } },
+                        enabled = !busy && atten.isNotBlank()
+                    ) { Text("Set") }
+                }
+                Text(
+                    "How far the speaker amp is held down in stereo (0-30, default 6). " +
+                        "This margin stands in for Awinic's protection. Raise it if you " +
+                        "play loud; use Mono for loud listening.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+
+    if (confirmStereo) {
+        AlertDialog(
+            onDismissRequest = { confirmStereo = false },
+            title = { Text("Switch to stereo?") },
+            text = {
+                Text(
+                    "Stereo switches off two mono folds: one in MediaTek's audio HAL, and " +
+                        "Awinic's speaker-protection processing on the audio DSP. The phone's " +
+                        "own vendor files are patched in the module overlay after hash " +
+                        "checks; anything unrecognised is refused.\n\n" +
+                        "Without Awinic's processing, media on the speaker relies on the " +
+                        "amp's hardware cut-outs and a fixed attenuation. Use Mono for loud " +
+                        "listening and back off at the first distortion.\n\n" +
+                        "Needs a reboot. Two failed boots put it back to mono automatically."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmStereo = false
+                    action("channels") { StereoCtl.setChannels(true) }
+                }) { Text("Stage stereo") }
+            },
+            dismissButton = { TextButton(onClick = { confirmStereo = false }) { Text("Cancel") } }
+        )
+    }
+
+    if (confirmReboot) {
+        AlertDialog(
+            onDismissRequest = { confirmReboot = false },
+            title = { Text("Reboot now?") },
+            text = { Text("The phone restarts to switch to ${s.channelsStaged}.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmReboot = false
+                    action("reboot") { StereoCtl.reboot() }
+                }) { Text("Reboot") }
+            },
+            dismissButton = { TextButton(onClick = { confirmReboot = false }) { Text("Cancel") } }
+        )
+    }
+}
+
+@Composable
 private fun AdvancedTab(s: StereoCtl.Status, busy: Boolean, action: (String, () -> String) -> Unit) {
     var interval by remember(s.interval) { mutableStateOf(s.interval) }
 
@@ -377,9 +498,10 @@ private fun AdvancedTab(s: StereoCtl.Status, busy: Boolean, action: (String, () 
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Danger zone", style = MaterialTheme.typography.titleMedium)
             Text(
-                "The audio policy overlay must NOT be used on the CMF Phone 1: the mono " +
-                    "speaker port is what makes the framework sum L+R, and widening it " +
-                    "would drop the right channel entirely. Needs a reboot either way.",
+                "The audio policy overlay is for other hardware. On the CMF Phone 1 it " +
+                    "is a no-op: the speaker port is already stereo, and true stereo " +
+                    "comes from Channels on the Speaker tab instead. Needs a reboot " +
+                    "either way.",
                 style = MaterialTheme.typography.bodySmall
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

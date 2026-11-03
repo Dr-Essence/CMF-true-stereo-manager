@@ -43,6 +43,13 @@ object StereoCtl {
         val guardBypassed: Boolean = false,
         val interval: String = "2",
         val logLevel: String = "info",
+        /** Channels the running system uses: "mono" or "stereo". */
+        val channels: String = "mono",
+        /** Channels after the next reboot. Differs from [channels] until then. */
+        val channelsStaged: String = "mono",
+        /** False on modules older than v0.9.0, which have no channel modes. */
+        val supportsChannels: Boolean = false,
+        val stereoAttenDb: String = "6",
         val raw: String = ""
     )
 
@@ -55,6 +62,10 @@ object StereoCtl {
         if (!installed()) return Status(rooted = true, installed = false)
 
         val raw = ctl("status").out
+        // "channels:  stereo"  or  "channels:  mono (switches to stereo after reboot)"
+        val ch = Regex("""channels:\s+(mono|stereo)(?:\s+\(switches to (mono|stereo))?""").find(raw)
+        val running = ch?.groupValues?.get(1) ?: "mono"
+        val staged = ch?.groupValues?.get(2)?.ifBlank { null } ?: running
         return Status(
             installed = true,
             rooted = true,
@@ -70,11 +81,33 @@ object StereoCtl {
             guardBypassed = Shell.run("test -f $DATA_DIR/guard_bypass && echo yes").out.trim() == "yes",
             interval = readSetting("WATCH_INTERVAL").ifBlank { "2" },
             logLevel = readSetting("LOG_LEVEL").ifBlank { "info" },
+            channels = running,
+            channelsStaged = staged,
+            supportsChannels = supportsCommand("channels"),
+            stereoAttenDb = readSetting("STEREO_ATTEN_DB").ifBlank { "6" },
             raw = raw
         )
     }
 
     fun setArmed(on: Boolean) = ctl(if (on) "on" else "off").out
+
+    /**
+     * Stages mono or stereo. Takes effect after a reboot: stereo is a boot-time
+     * overlay of the audio HAL and the DSP config, built on the phone from its
+     * own vendor files after hash checks (module README, "Mono and stereo").
+     */
+    fun setChannels(stereo: Boolean) = ctl(if (stereo) "channels stereo" else "channels mono").out
+
+    /** Clamped like the module clamps it; the daemon re-reads it every cycle. */
+    fun setStereoAtten(db: Int): String {
+        val v = db.coerceIn(0, 30)
+        setSetting("STEREO_ATTEN_DB", v.toString())
+        val after = readSetting("STEREO_ATTEN_DB")
+        return if (after == v.toString()) "stereo attenuation -> $v dB (applied on the daemon's next cycle)"
+        else "FAILED to write STEREO_ATTEN_DB: stereo.conf reads '${after.ifBlank { "nothing" }}'"
+    }
+
+    fun reboot() = Shell.run("svc power reboot 2>/dev/null || reboot").out
 
     fun solo(on: Boolean) = ctl(if (on) "solo" else "unsolo").out
 

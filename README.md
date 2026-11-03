@@ -11,6 +11,13 @@ front end, in the same spirit as
 
 ## What it does
 
+- **Channels: Mono / Stereo** — mono is stock audio (both drivers play the
+  full mix, with Awinic speaker protection); stereo puts the left channel on
+  the earpiece and the right on the speaker. Shows what is running and what
+  is staged, warns before staging stereo, and offers a reboot when the two
+  differ. In stereo, sets the amp attenuation that stands in for Awinic's
+  protection (`STEREO_ATTEN_DB`). Needs module v0.9.0+; on older modules the
+  switch is hidden. How and why: the module's README, *Mono and stereo*.
 - Arm / disarm the earpiece output
 - Earpiece gain slider, clamped to 31 (the hardware ceiling — above that the
   5-bit register field wraps and gets *quieter*)
@@ -32,8 +39,9 @@ source of truth, and the terminal keeps working exactly as before.
 ## Not an Xposed module
 
 There is nothing to hook. The settings are text files a shell daemon reads,
-so this is an ordinary root app. It uses `su -c` directly rather than a root
-library, to keep the dependency list to Compose alone.
+so this is an ordinary root app. It talks to `su` directly (commands go
+over its stdin) rather than through a root library, to keep the dependency
+list to Compose alone.
 
 ## Build
 
