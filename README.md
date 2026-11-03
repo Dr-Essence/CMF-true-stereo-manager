@@ -21,7 +21,8 @@ Both are built from this repo and install side by side:
 | Developer tools | none | mixer controls, diff, probe, sweep, logs, config files |
 
 The clean edition uses Nothing's own NDot font from the phone (it prefers
-NDot 57 JP Expanded, then any NDot 57, then any NDot), so nothing of Nothing's
+the JP Extended cut, `Ndot77JPExtended.ttf` on the CMF Phone 1, then NDot 57,
+then any NDot), so nothing of Nothing's
 ships in the APK. Phones without it fall back to monospace.
 
 Its levels map onto the module like this:

@@ -13,8 +13,8 @@ import java.util.Locale
 /**
  * Nothing's NDot, taken from where it already is on the phone - it is Nothing's
  * font and does not ship with this app. Looks in the system font folders first,
- * then in Nothing's widgets app. Preference: NDot 57 JP Expanded, then any
- * NDot 57, then any NDot. Null when the phone has none (not a Nothing phone),
+ * then in Nothing's widgets app. Preference: the JP Extended cut
+ * (Ndot77JPExtended.ttf on the CMF Phone 1), then NDot 57, then any NDot. Null when the phone has none (not a Nothing phone),
  * and the app then falls back to the system monospace.
  *
  * The font is read into a buffer of its own: a font taken straight from another
@@ -46,9 +46,10 @@ object NdotFont {
         val n = name.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "")
         if (!n.contains("ndot")) return -1
         var s = 0
-        if (n.contains("57")) s += 4
-        if (n.contains("jp")) s += 2
-        if (n.contains("expanded")) s += 1
+        if (n.contains("jp")) s += 8
+        if (n.contains("extended") || n.contains("expanded")) s += 4
+        if (n.contains("57")) s += 2
+        if (n.contains("caps") || n.contains("aligned")) s -= 1
         return s
     }
 
@@ -66,7 +67,7 @@ object NdotFont {
     private fun fromWidgets(context: Context): Typeface? = runCatching {
         val res = context.createPackageContext(WIDGETS_PKG, 0).resources
         val names = listOf(
-            "ndot57_jp_expanded", "ndot_57_jp_expanded", "ndot57jp_expanded",
+            "ndot77jpextended", "ndot77_jp_extended", "ndot_77_jp_extended",
             "ndot57", "ndot_57_aligned", "ndot55", "ndot"
         )
         val id = names.asSequence()
