@@ -9,7 +9,30 @@ front end, in the same spirit as
 [PerfMTK](https://github.com/JUANIMAN/PerfMTK) and its separate
 [PerfMTK-Manager](https://github.com/JUANIMAN/PerfMTK-Manager).
 
-## What it does
+## Two editions
+
+Both are built from this repo and install side by side:
+
+| | **CMF Stereo** (`clean`) | **CMF Stereo Pro** (`pro`) |
+|---|---|---|
+| For | everyday listening | tuning and diagnosing |
+| Look | Nothing's design language: black, NDot type in glowing green | Material dark |
+| Controls | on/off, Mono/Stereo, earpiece level and speaker level on a plain 1–10 scale | everything below, in raw values |
+| Developer tools | none | mixer controls, diff, probe, sweep, logs, config files |
+
+The clean edition uses Nothing's own NDot font from the phone (it prefers
+NDot 57 JP Expanded, then any NDot 57, then any NDot), so nothing of Nothing's
+ships in the APK. Phones without it fall back to monospace.
+
+Its levels map onto the module like this:
+
+- **Earpiece level** 10 = `Handset Volume` 0 (+8 dB, the receiver's maximum),
+  each step 2 dB down to level 1 (−10 dB).
+- **Speaker level** (stereo only) 10 = `STEREO_ATTEN_DB` 6 dB, each step 2 dB
+  more down to level 1 (24 dB). It never goes below the 6 dB margin that
+  stands in for the speaker protection stereo turns off.
+
+## What it does (Pro)
 
 - **Channels: Mono / Stereo** — mono is stock audio (both drivers play the
   full mix, with Awinic speaker protection); stereo puts the left channel on

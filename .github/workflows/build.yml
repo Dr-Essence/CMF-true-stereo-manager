@@ -35,13 +35,17 @@ jobs:
       - name: Build release APK
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
+      # Two editions: pro (full manager with developer tools) and clean
+      # (everyday, Nothing-styled). Both installable side by side.
       - name: Rename
         run: |
           mkdir -p out
-          VER=$(grep -m1 versionName app/build/outputs/apk/release/output-metadata.json \
-                | cut -d'"' -f4 || echo unknown)
-          cp app/build/outputs/apk/release/app-release.apk \
-             "out/cmf-stereo-manager-v${VER}-$(git rev-parse --short HEAD).apk"
+          SHA=$(git rev-parse --short HEAD)
+          for ED in pro clean; do
+            DIR=app/build/outputs/apk/$ED/release
+            VER=$(grep -m1 versionName $DIR/output-metadata.json | cut -d'"' -f4 || echo unknown)
+            cp $DIR/app-$ED-release.apk "out/cmf-stereo-manager-$ED-v${VER}-${SHA}.apk"
+          done
           ls -l out
 
       - uses: actions/upload-artifact@v4
@@ -60,6 +64,10 @@ jobs:
           prerelease: true
           body: |
             Automatic build of `main`. Debug-signed, for sideloading.
+
+            Two editions, installable side by side:
+            - `clean`: CMF Stereo, for everyday use (Nothing style, plain 1-10 levels)
+            - `pro`: CMF Stereo Pro, the full manager with developer tools
 
             Needs the [cmf-fake-stereo](https://github.com/Tiimoo-debug/cmf-fake-stereo)
             module installed. Tagged releases are the stable ones; this tag

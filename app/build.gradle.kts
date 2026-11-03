@@ -34,6 +34,24 @@ android {
         versionName = "1.0.${gitCommitCount()}"
     }
 
+    // Two apps from one codebase, installable side by side:
+    //   pro   - the full manager with the developer tools (the original app)
+    //   clean - for everyday use: Nothing's design language, NDot type, plain
+    //           1-10 levels instead of register values, no developer tools
+    // Both drive the same module through the same StereoCtl (src/main).
+    flavorDimensions += "edition"
+    productFlavors {
+        create("pro") {
+            dimension = "edition"
+            resValue("string", "app_name", "CMF Stereo Pro")
+        }
+        create("clean") {
+            dimension = "edition"
+            applicationIdSuffix = ".clean"
+            resValue("string", "app_name", "CMF Stereo")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
