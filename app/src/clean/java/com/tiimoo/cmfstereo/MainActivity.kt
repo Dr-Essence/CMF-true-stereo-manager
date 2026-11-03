@@ -114,6 +114,9 @@ private fun CleanApp() {
             Modifier
                 .fillMaxSize()
                 .background(Black)
+                // Android 15 draws apps edge-to-edge: keep clear of the status
+                // and navigation bars, or the title sits under the clock.
+                .windowInsetsPadding(WindowInsets.safeDrawing)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 28.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
