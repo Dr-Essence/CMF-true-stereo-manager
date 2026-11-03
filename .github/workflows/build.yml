@@ -44,8 +44,9 @@ jobs:
           for ED in pro clean; do
             DIR=app/build/outputs/apk/$ED/release
             VER=$(grep -m1 versionName $DIR/output-metadata.json | cut -d'"' -f4 || echo unknown)
-            cp $DIR/app-$ED-release.apk "out/cmf-stereo-manager-$ED-v${VER}-${SHA}.apk"
+            cp $DIR/app-$ED-release.apk "out/CMF-true-stereo-$ED-v${VER}-${SHA}.apk"
           done
+          echo "VER=$VER" >> "$GITHUB_ENV"
           ls -l out
 
       - uses: actions/upload-artifact@v4
@@ -69,7 +70,27 @@ jobs:
             - `clean`: CMF Stereo, for everyday use (Nothing style, plain 1-10 levels)
             - `pro`: CMF Stereo Pro, the full manager with developer tools
 
-            Needs the [cmf-fake-stereo](https://github.com/Tiimoo-debug/cmf-fake-stereo)
+            Needs the [CMF-true-stereo](https://github.com/Dr-Essence/CMF-true-stereo)
             module installed. Tagged releases are the stable ones; this tag
             moves with every push.
+          files: out/*.apk
+
+      # Running this workflow by hand on main publishes a proper (non-
+      # prerelease) release, tagged with the app's version.
+      - name: Publish release
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VER }}
+          target_commitish: ${{ github.sha }}
+          name: CMF-true-stereo manager v${{ env.VER }}
+          body: |
+            Two editions, installable side by side:
+
+            - **CMF Stereo** (`clean`) - for everyday use: Nothing style with NDot type,
+              on/off, Mono/Stereo, earpiece and speaker level on a plain 1-10 scale.
+            - **CMF Stereo Pro** (`pro`) - the full manager with developer tools.
+
+            Needs the [CMF-true-stereo](https://github.com/Dr-Essence/CMF-true-stereo/releases)
+            module (v0.9.0+ for Mono/Stereo) and root. Debug-signed, for sideloading.
           files: out/*.apk

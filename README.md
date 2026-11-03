@@ -1,7 +1,7 @@
-# cmf-fake-stereo-manager
+# CMF-true-stereo-manager
 
 A small root app for controlling the
-[cmf-fake-stereo](https://github.com/Tiimoo-debug/cmf-fake-stereo) Magisk
+[CMF-true-stereo](https://github.com/Dr-Essence/CMF-true-stereo) Magisk
 module without a terminal.
 
 The module works perfectly well on its own — this is the optional friendly
@@ -57,7 +57,7 @@ source of truth, and the terminal keeps working exactly as before.
 
 ## Requirements
 
-- The `cmf-fake-stereo` module, installed and rebooted
+- The `CMF-true-stereo` module, installed and rebooted ([Releases](https://github.com/Dr-Essence/CMF-true-stereo/releases))
 - Root (Magisk / KernelSU / APatch) and superuser permission for this app
 - Android 8.0+
 

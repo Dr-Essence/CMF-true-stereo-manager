@@ -131,7 +131,7 @@ fun App() {
 
             when {
                 !status.rooted -> Padded { Problem("No root access", "Grant superuser permission, then Refresh.") }
-                !status.installed -> Padded { Problem("Module not installed", "Flash cmf-fake-stereo and reboot.") }
+                !status.installed -> Padded { Problem("Module not installed", "Flash CMF-true-stereo and reboot.") }
                 else -> {
                     TabRow(selectedTabIndex = tab) {
                         listOf("Speaker", "Settings", "Developer", "Guide").forEachIndexed { i, t ->
