@@ -64,8 +64,7 @@ fun App() {
     }
 
     // Steps the gain across its range, holding each value long enough to judge
-    // by ear. The mapping is not monotonic on this hardware, so listening to
-    // every value is the only way to find the loudest.
+    // by ear - to find where the earpiece balances the speaker.
     //
     // Each step writes actions.conf as well as the mixer. Writing only the
     // mixer does not work: the daemon re-asserts the configured gain every
@@ -220,7 +219,15 @@ private fun ControlTab(
                 )
             }
             StatusRow("Routing", "${s.actionCount} actions", s.actionCount > 0)
-            StatusRow("Gain", s.gain?.toString() ?: "unreadable", s.gain != null)
+            StatusRow(
+                "Earpiece gain",
+                when (val g = s.gain) {
+                    null -> "unreadable"
+                    in 0..StereoCtl.MAX_GAIN -> "${StereoCtl.gainDb(g)} dB"
+                    else -> "$g = mute (update the module)"
+                },
+                s.gain != null && s.gain in 0..StereoCtl.MAX_GAIN
+            )
             StatusRow("Guard", if (s.guardBypassed) "bypassed" else "active", true)
             if (s.moduleVersion.isNotBlank()) StatusRow("Module", s.moduleVersion, true)
             StatusRow("App", BuildConfig.VERSION_NAME, true)
@@ -273,24 +280,27 @@ private fun ControlTab(
             HorizontalDivider()
 
             Text("Earpiece gain", style = MaterialTheme.typography.titleSmall)
+            val value = gain.toInt().coerceIn(0, max)
             Text(
-                if (gainReadable) "${gain.toInt()} of $max" else "unavailable",
+                if (gainReadable) "${StereoCtl.gainDb(value)} dB" else "unavailable",
                 style = MaterialTheme.typography.bodyMedium
             )
+            // Shown in dB, left = quiet: the register itself runs the other
+            // way (0 is the loudest), so the slider position is 8 - dB.
             Slider(
-                value = gain.coerceAtMost(max.toFloat()),
-                onValueChange = onGain,
+                value = StereoCtl.gainDb(value).toFloat(),
+                onValueChange = { db -> onGain(8f - db) },
                 onValueChangeFinished = onGainCommit,
-                valueRange = 0f..max.toFloat(),
+                valueRange = -10f..8f,
                 steps = max - 1,
                 enabled = !busy && gainReadable
             )
             Text(
-                "This has little audible effect here. Loudness is set by " +
-                    "ADDA_DL_GAIN, which the HAL already keeps near maximum " +
-                    "during playback, so the earpiece is as loud as this path " +
-                    "allows regardless of where this sits. Left in because it is " +
-                    "the receiver's own gain and lowering it does work.",
+                "The receiver amp's gain, -10 to +8 dB. +8 dB is its maximum and the " +
+                    "value the HAL itself uses. The earpiece will not match the speaker; " +
+                    "in Stereo, balance them by turning the speaker down " +
+                    "(Stereo attenuation), not by pushing the earpiece. It has no " +
+                    "protection circuit: back off at the first buzz.",
                 style = MaterialTheme.typography.bodySmall
             )
             if (!gainReadable) {
@@ -531,7 +541,7 @@ private fun ToolsTab(
     var rawArgs by remember { mutableStateOf("") }
     var diffSeconds by remember { mutableStateOf("20") }
     var sweepFrom by remember { mutableStateOf("0") }
-    var sweepTo by remember { mutableStateOf("31") }
+    var sweepTo by remember { mutableStateOf("18") }
     var dwell by remember { mutableStateOf("4") }
 
     Text(
@@ -545,10 +555,9 @@ private fun ToolsTab(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Gain sweep", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Steps the earpiece gain across a range, holding each value so you " +
-                    "can judge it by ear. The mapping is not monotonic on this " +
-                    "hardware, so listening is the only way to find the loudest " +
-                    "setting. Play music and use Solo first.",
+                "Steps Handset Volume across a range (0 = +8 dB ... 18 = -10 dB), " +
+                    "holding each value so you can judge it by ear. Play music and " +
+                    "use Solo first.",
                 style = MaterialTheme.typography.bodySmall
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -570,7 +579,7 @@ private fun ToolsTab(
                     onClick = {
                         onSweep(
                             sweepFrom.toIntOrNull() ?: 0,
-                            (sweepTo.toIntOrNull() ?: 31).coerceAtMost(StereoCtl.MAX_GAIN),
+                            (sweepTo.toIntOrNull() ?: StereoCtl.MAX_GAIN).coerceAtMost(StereoCtl.MAX_GAIN),
                             ((dwell.toLongOrNull() ?: 4L) * 1000)
                         )
                     },

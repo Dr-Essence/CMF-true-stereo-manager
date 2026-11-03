@@ -19,8 +19,9 @@ front end, in the same spirit as
   protection (`STEREO_ATTEN_DB`). Needs module v0.9.0+; on older modules the
   switch is hidden. How and why: the module's README, *Mono and stereo*.
 - Arm / disarm the earpiece output
-- Earpiece gain slider, clamped to 31 (the hardware ceiling — above that the
-  5-bit register field wraps and gets *quieter*)
+- Earpiece gain slider in dB, −10 to +8 (`Handset Volume` 18 … 0; on this
+  codec 0 is the loudest and 31 is mute — earlier versions had that the
+  wrong way round)
 - Mode: apply only while audio is playing, or always
 - **Solo** — speaker off, earpiece only, for auditioning
 - **Doctor** — diagnose why the earpiece is silent

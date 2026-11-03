@@ -109,32 +109,20 @@ object Help {
                 "stereo why channels split fold dsp hal"
             ),
             HelpEntry(
-                "How loud it can go, and why that is the ceiling",
-                "The earpiece is already as loud as this signal path allows.\n\n" +
-                    "Loudness is set by ADDA_DL_GAIN, the digital gain on the " +
-                    "internal codec's downlink. Measured: at 2000 the earpiece is " +
-                    "inaudible, at 65535 it is normal. The HAL already parks it at " +
-                    "about 63311 of 65535 during playback - roughly 0.3 dB from " +
-                    "maximum - so there is no reserve to unlock.\n\n" +
-                    "It is deliberately NOT in the module's config: ADDA_DL is " +
-                    "shared with the headphone path, and pinning it would raise " +
-                    "headphone output as a side effect for a fraction of a dB.",
-                "loud volume louder ceiling adda gain"
-            ),
-            HelpEntry(
-                "Handset Volume (the gain slider)",
-                "The receiver's own gain, range 0-31 (5-bit field: 40 wraps to 8, " +
-                    "measured). Lowering it does work, so it is useful if you want " +
-                    "the earpiece quieter than the speaker.\n\n" +
-                    "But it has little audible effect near the top: 5 and 31 sound " +
-                    "much alike, because ADDA_DL_GAIN sets the real level.\n\n" +
-                    "Earlier versions of this app and its docs claimed 31 was the " +
-                    "loudness ceiling and warned about a 'non-monotonic scale'. " +
-                    "That was wrong. The apparent disorder was small variation " +
-                    "across an essentially flat response, and the big improvement " +
-                    "credited to this control was actually ADDA_DL_GAIN being " +
-                    "restored after it had been mistakenly lowered.",
-                "handset volume gain slider 31 18 monotonic"
+                "Earpiece gain (Handset Volume)",
+                "The receiver amp's gain on the MT6369 codec. Read from its driver: " +
+                    "range 0-18, and the register runs opposite to the dB scale ALSA " +
+                    "advertises:\n\n" +
+                    "  0 = +8 dB (loudest)\n  8 = 0 dB\n  18 = -10 dB\n" +
+                    "  31 = -40 dB (the codec's mute value)\n\n" +
+                    "The HAL itself sets 0 whenever it drives the receiver. Module " +
+                    "versions before v0.9.2 shipped 31, believing it was the top, so " +
+                    "the daemon kept pulling the earpiece down to mute while the HAL " +
+                    "put it back - the repeating 'Handset Volume: 0 -> 31' log lines. " +
+                    "The installer now corrects it to 0.\n\n" +
+                    "ADDA_DL_GAIN, the digital gain before the DAC, stays with the HAL " +
+                    "(63311 of 65535, -0.3 dB); it is shared with the headphone path.",
+                "handset volume gain slider loud louder 31 18 adda"
             ),
             HelpEntry(
                 "Safety",

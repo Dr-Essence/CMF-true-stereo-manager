@@ -15,17 +15,17 @@ object StereoCtl {
     private const val CONF = "$DATA_DIR/stereo.conf"
 
     /**
-     * Full range of the Handset Volume field: 5 bits, so 31 is the top (40
-     * wraps to 8, measured).
+     * Handset Volume, read from the MT6369 codec driver: range 0-18, and the
+     * register runs opposite to the dB scale ALSA advertises -
+     * 0 = +8 dB (loudest), 8 = 0 dB, 18 = -10 dB, 31 = -40 dB (mute).
      *
-     * Note this control has little audible effect on this device. Loudness is
-     * set by ADDA_DL_GAIN, which the HAL already parks at ~63311 of 65535
-     * during playback - about 0.3 dB from maximum. An earlier version of this
-     * app treated Handset Volume as the loudness control and warned at length
-     * about a "non-monotonic scale"; that was a misreading of a response
-     * that is close to flat.
+     * Earlier versions treated 31 as the top, which held the earpiece at the
+     * codec's mute value against the HAL's own +8 dB.
      */
-    const val MAX_GAIN = 31
+    const val MAX_GAIN = 18
+
+    /** dB for a Handset Volume value. */
+    fun gainDb(value: Int): Int = 8 - value
 
     data class Status(
         val installed: Boolean = false,
