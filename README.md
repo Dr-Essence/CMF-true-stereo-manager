@@ -34,17 +34,17 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.35** (both editions, about 1 MB each), signed with the permanent key:
-later releases install over it. Works best with module v0.9.5 (live switching, orientation
-swap).
+**Current release: v1.0.39** (both editions, about 1 MB each), signed with the permanent key
+(installs over v1.0.35). Works best with module v0.9.5+ (live switching, orientation swap).
 
 **Verified on the phone**
 - CMF Stereo (clean): NDot 77 JP Extended loads from the phone, the glow and dot levels
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
-- Next build: the NDot-style icon (a speaker and two waves as a dot matrix, with Nothing's red
-  dot, on black) and its themed-icon layer. Rendered and checked here; not yet seen on the phone.
+- v1.0.39: the NDot-style icon (a speaker and two waves as a dot matrix, with Nothing's red
+  dot, on black) and its themed-icon layer, and its live animation with Nothing Launcher+.
+  Rendered and checked here; not yet seen on the phone.
 - v1.0.35: the Stereo text (left and right follow the screen), and the Mono/Stereo buttons
   switching live (module v0.9.4+).
 - Next build: Mono/Stereo applies at once with module v0.9.4 (the module restarts the audio HAL;
