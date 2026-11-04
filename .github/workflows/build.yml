@@ -56,8 +56,11 @@ jobs:
 
       # Actions artifacts need a login to download and expire after 90 days.
       # A rolling prerelease gives every main build a permanent, public URL.
+      # Pushes only: a hand-run release on a commit the push already built would
+      # upload the same file names again, which GitHub refuses (and that
+      # failure skipped the release step below).
       - name: Publish rolling build
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
