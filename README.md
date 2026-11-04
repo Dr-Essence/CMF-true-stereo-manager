@@ -21,6 +21,28 @@ Install either or both — they sit side by side. You need root and the
 [module](https://github.com/Dr-Essence/CMF-true-stereo/releases/latest)
 flashed first.
 
+## Status
+
+**Current release: v1.0.25** (both editions). Needs module v0.9.2.
+
+**Verified on the phone**
+- CMF Stereo (clean): NDot 77 JP Extended loads from the phone, the glow and dot levels
+  render, earpiece and speaker levels read correctly, and the title sits below the status bar.
+
+**Not tested on a phone yet**
+- CMF Stereo Pro's new dB earpiece slider and its Channels card.
+- The Restart phone button in both editions.
+- Either edition on a phone without NDot (should fall back to monospace).
+
+**Pending**
+- Release builds are signed with a temporary key, so an update needs the old app uninstalled
+  first. A permanent signing key would fix that.
+
+**Fixed recently**
+- v1.0.25: clean edition drew its title under the status bar (edge-to-edge on Android 15+).
+- v1.0.21: earpiece slider treated 31 as the top; it is the codec's mute value.
+- v1.0.21: two editions, Mono/Stereo channels, new names and links.
+
 ---
 
 ## About
