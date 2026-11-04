@@ -156,6 +156,9 @@ and so is a CI build of a fork; neither can update an installed release.
 
 ## Licence
 
-© 2026 Dr.Essence, under the [0BSD licence](LICENSE): use, copy, change and
-share it for any purpose, no conditions. The clean edition draws Nothing's
+© 2026 Dr.Essence, under [CC BY-NC-SA 4.0](LICENSE): use, copy, change and
+share it, as long as you credit Dr.Essence, do not use it commercially
+(including selling it or anything built from it), and share changed versions
+under the same licence. Releases up to v1.0.35 were published under 0BSD;
+copies obtained under it keep those terms. The clean edition draws Nothing's
 NDot font from the phone at runtime; no Nothing font ships in this app.
