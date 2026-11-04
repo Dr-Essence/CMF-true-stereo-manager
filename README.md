@@ -42,6 +42,8 @@ which adds the quick `status brief` the app asks for; older modules still work, 
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- Next build: Stereo text says left and right follow the screen (module v0.9.5 swaps them with
+  the rotation).
 - Next build: Mono/Stereo applies at once with module v0.9.4 (the module restarts the audio HAL;
   the app only shows "restart the phone" when that could not be done). Wording updated in both
   editions and the Pro guide; compiled, not yet run on the phone.

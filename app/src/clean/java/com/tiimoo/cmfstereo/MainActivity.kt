@@ -204,8 +204,8 @@ private fun Controls(
             Spacer(Modifier.height(12.dp))
             Body(
                 if (s.channelsStaged == "stereo")
-                    "Left from the earpiece, right from the bottom speaker. Hold the phone " +
-                        "with the earpiece on your left."
+                    "Left from the earpiece, right from the bottom speaker. Turn the phone " +
+                        "either way: left and right follow the screen."
                 else
                     "Both speakers play the same full sound, with full speaker protection. " +
                         "Best for loud listening."
