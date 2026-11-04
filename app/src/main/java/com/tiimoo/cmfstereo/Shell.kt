@@ -47,6 +47,4 @@ object Shell {
     } catch (e: Exception) {
         Result(false, e.message ?: "failed to start su")
     }
-
-    fun hasRoot(): Boolean = run("id -u").let { it.ok && it.out.trim().endsWith("0") }
 }

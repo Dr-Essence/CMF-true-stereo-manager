@@ -55,13 +55,53 @@ object StereoCtl {
 
     private fun ctl(args: String) = Shell.run("sh $CTL $args")
 
-    fun installed(): Boolean = Shell.run("test -f $CTL && echo yes").out.trim() == "yes"
-
+    /**
+     * Everything the screen shows, read in ONE root shell.
+     *
+     * Each su call is a new root process (Magisk/KernelSU hand it over through
+     * their daemon), and this used to make about fourteen of them, plus a full
+     * `stereoctl status` that read every configured control back through
+     * tinymix. That ran after every tap, which is most of why switching the
+     * earpiece on and off felt slow. `status brief` skips the read-back;
+     * modules older than v0.9.3 ignore the word and print the full status,
+     * which parses the same.
+     */
     fun status(): Status {
-        if (!Shell.hasRoot()) return Status(rooted = false)
-        if (!installed()) return Status(rooted = true, installed = false)
+        val r = Shell.run(
+            """
+            echo "@uid=${'$'}(id -u)"
+            if [ ! -f $CTL ]; then echo '@installed=no'; exit 0; fi
+            echo '@installed=yes'
+            echo '@status'
+            sh $CTL status brief 2>&1
+            echo '@help'
+            sh $CTL --help 2>&1
+            echo '@end'
+            echo "@gain=${'$'}(grep '^ctl|Handset Volume|' $ACTIONS 2>/dev/null | head -n 1 | cut -d'|' -f3)"
+            echo "@version=${'$'}(grep '^version=' $MODULE_DIR/module.prop 2>/dev/null | cut -d= -f2)"
+            [ -f $DATA_DIR/guard_bypass ] && echo '@guard_bypass'
+            grep -E '^(WATCH_INTERVAL|LOG_LEVEL|STEREO_ATTEN_DB)=' $CONF 2>/dev/null | sed 's/^/@set:/'
+            """.trimIndent()
+        )
+        val lines = r.out.lines()
+        if (!r.ok && lines.none { it.startsWith("@uid=") }) return Status(rooted = false)
+        if (lines.firstOrNull { it.startsWith("@uid=") }?.removePrefix("@uid=")?.trim() != "0") {
+            return Status(rooted = false)
+        }
+        if ("@installed=yes" !in lines) return Status(rooted = true, installed = false)
 
-        val raw = ctl("status").out
+        fun section(start: String, end: String): String {
+            val i = lines.indexOf(start); val j = lines.indexOf(end)
+            return if (i >= 0 && j > i) lines.subList(i + 1, j).joinToString("\n") else ""
+        }
+        val raw = section("@status", "@help")
+        val help = section("@help", "@end")
+        fun value(tag: String) = lines.firstOrNull { it.startsWith(tag) }?.removePrefix(tag)?.trim().orEmpty()
+        // First match wins, quotes stripped: what `grep -m1 | cut | tr -d "'"` gave.
+        fun setting(key: String) = lines.firstOrNull { it.startsWith("@set:$key=") }
+            ?.substringAfter('=')?.replace("'", "")?.trim().orEmpty()
+        fun supports(name: String) = Regex("^  $name", RegexOption.MULTILINE).containsMatchIn(help)
+
         // "channels:  stereo"  or  "channels:  mono (switches to stereo after reboot)"
         val ch = Regex("""channels:\s+(mono|stereo)(?:\s+\(switches to (mono|stereo))?""").find(raw)
         val running = ch?.groupValues?.get(1) ?: "mono"
@@ -73,18 +113,18 @@ object StereoCtl {
             daemonRunning = raw.contains(Regex("""daemon:\s+running""")),
             playing = raw.contains(Regex("""playback:\s+active""")),
             mode = Regex("""mode:\s+(\w+)""").find(raw)?.groupValues?.get(1) ?: "playback",
-            gain = readGain(),
+            gain = value("@gain=").toIntOrNull(),
             actionCount = Regex("""\((\d+) configured\)""").find(raw)?.groupValues?.get(1)?.toIntOrNull() ?: 0,
-            moduleVersion = readModuleVersion(),
-            supportsDoctor = supportsCommand("doctor"),
-            supportsReset = supportsCommand("reset"),
-            guardBypassed = Shell.run("test -f $DATA_DIR/guard_bypass && echo yes").out.trim() == "yes",
-            interval = readSetting("WATCH_INTERVAL").ifBlank { "2" },
-            logLevel = readSetting("LOG_LEVEL").ifBlank { "info" },
+            moduleVersion = value("@version="),
+            supportsDoctor = supports("doctor"),
+            supportsReset = supports("reset"),
+            guardBypassed = "@guard_bypass" in lines,
+            interval = setting("WATCH_INTERVAL").ifBlank { "2" },
+            logLevel = setting("LOG_LEVEL").ifBlank { "info" },
             channels = running,
             channelsStaged = staged,
-            supportsChannels = supportsCommand("channels"),
-            stereoAttenDb = readSetting("STEREO_ATTEN_DB").ifBlank { "6" },
+            supportsChannels = supports("channels"),
+            stereoAttenDb = setting("STEREO_ATTEN_DB").ifBlank { "6" },
             raw = raw
         )
     }
@@ -132,14 +172,6 @@ object StereoCtl {
         if (!r.ok) return null
         return r.out.trim().toIntOrNull()
     }
-
-    fun readModuleVersion(): String =
-        Shell.run("grep '^version=' $MODULE_DIR/module.prop 2>/dev/null | cut -d= -f2")
-            .out.trim()
-
-    /** Older modules lack the newer subcommands; asking is cheaper than guessing. */
-    fun supportsCommand(name: String): Boolean =
-        Shell.run("sh $CTL --help 2>&1 | grep -c '^  $name'").out.trim().toIntOrNull()?.let { it > 0 } ?: false
 
     /**
      * Rewrite the gain in actions.conf. Clamped to the hardware ceiling: the

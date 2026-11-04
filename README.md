@@ -23,13 +23,16 @@ flashed first.
 
 ## Status
 
-**Current release: v1.0.25** (both editions). Needs module v0.9.2.
+**Current release: v1.0.25** (both editions). Needs module v0.9.2. The next build (about 1 MB
+instead of 97 MB, faster switching) works best with module v0.9.3.
 
 **Verified on the phone**
 - CMF Stereo (clean): NDot 77 JP Extended loads from the phone, the glow and dot levels
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- The next build: R8-shrunk release (clean 0.86 MB, pro 1.1 MB, built and checked locally),
+  and the status read in a single root shell (its script checked against the module).
 - CMF Stereo Pro's new dB earpiece slider and its Channels card.
 - The Restart phone button in both editions.
 - Either edition on a phone without NDot (should fall back to monospace).
@@ -39,6 +42,10 @@ flashed first.
   first. A permanent signing key would fix that.
 
 **Fixed recently**
+- Next build: the APK was 96.7 MB. Release builds were not shrunk, and they carried the whole
+  Material extended icon set, which the app never uses. Both are fixed.
+- Next build: every refresh after a tap started about fourteen root shells, one per value,
+  plus a full status that read every control back. Now it is one shell with `status brief`.
 - v1.0.25: clean edition drew its title under the status bar (edge-to-edge on Android 15+).
 - v1.0.21: earpiece slider treated 31 as the top; it is the codec's mute value.
 - v1.0.21: two editions, Mono/Stereo channels, new names and links.

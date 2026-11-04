@@ -54,7 +54,11 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 strips the unused parts of Compose and the libraries; without it
+            // the release APK carried all of them (it was over 90 MB).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             // Debug-signed so CI can produce an installable APK without a
             // secret key. Replace with a real signing config before shipping
             // anything you expect to update in place.
@@ -80,5 +84,4 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
 }
