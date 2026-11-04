@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/banner.png" alt="CMF Stereo manager" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Dr-Essence/CMF-true-stereo-manager/main/docs/banner.png" alt="CMF Stereo manager" width="100%"></p>
 
 # CMF-true-stereo-manager
 
@@ -21,6 +21,17 @@ Install either or both — they sit side by side. You need root and the
 [module](https://github.com/Dr-Essence/CMF-true-stereo/releases/latest)
 flashed first.
 
+### Stay updated with Komi Store
+
+Shout-out to **[Komi Store](https://github.com/komi-store/komi-store)**, the free, open-source
+app store for apps released on GitHub. Search for *CMF-true-stereo-manager* there, install
+the edition you want, and Komi Store keeps it updated from this repo's releases. Every release
+is signed with the same key, so updates install straight over the app you have.
+
+The module itself is a Magisk zip, not an app, so it is not offered there: flash it from
+[its releases](https://github.com/Dr-Essence/CMF-true-stereo/releases/latest) in
+Magisk / KernelSU / APatch.
+
 ## Status
 
 **Current release: v1.0.29** (both editions, about 1 MB each). Works best with module v0.9.3,
@@ -38,8 +49,10 @@ which adds the quick `status brief` the app asks for; older modules still work, 
 - Either edition on a phone without NDot (should fall back to monospace).
 
 **Pending**
-- Release builds are signed with a temporary key, so an update needs the old app uninstalled
-  first. A permanent signing key would fix that.
+- **Permanent signing key:** CI now signs with one fixed release key (checked locally:
+  certificate SHA-256 `35:65:18:89:…:27:EA:8B:FC`) once its four repository secrets are added.
+  The next release after that needs the old app uninstalled one last time; every release after
+  it updates in place, also through Komi Store. A release without the key is refused.
 
 **Fixed recently**
 - v1.0.29: the APK was 96.7 MB. Release builds were not shrunk, and they carried the whole
@@ -131,9 +144,10 @@ as an artifact. Locally:
 ./gradlew assembleRelease
 ```
 
-The release build is **debug-signed** so CI can produce an installable APK
-without a secret key. Swap in a real signing config before publishing
-anything you intend to update in place.
+Releases are signed with the project's permanent key, which CI reads from the
+repository secrets `SIGNING_KEYSTORE_B64` (the keystore, base64), `SIGNING_STORE_PASSWORD`,
+`SIGNING_KEY_ALIAS` and `SIGNING_KEY_PASSWORD`. A local build without them is debug-signed,
+and so is a CI build of a fork; neither can update an installed release.
 
 ## Licence
 

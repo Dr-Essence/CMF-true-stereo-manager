@@ -52,6 +52,22 @@ android {
         }
     }
 
+    // One permanent key, so every release installs over the last one (and app
+    // stores such as Komi Store can update it). CI writes the keystore from the
+    // repository secrets; without them (a local build) release falls back to
+    // the debug key.
+    val keystore = System.getenv("SIGNING_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = keystore
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             // R8 strips the unused parts of Compose and the libraries; without it
@@ -59,10 +75,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            // Debug-signed so CI can produce an installable APK without a
-            // secret key. Replace with a real signing config before shipping
-            // anything you expect to update in place.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 

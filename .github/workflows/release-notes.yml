@@ -1,6 +1,7 @@
 name: Release notes
 
-# The notes for a release live in docs/releases/<tag>.md. Editing one on main
+# The notes for a release live in docs/releases/<tag>.md, followed by the
+# shared docs/releases/footer.md. Editing one on main
 # rewrites that release's description, so notes can be fixed after the
 # release without touching the files attached to it.
 on:
@@ -21,10 +22,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for f in docs/releases/*.md; do
+          for f in docs/releases/v*.md; do
             tag=$(basename "$f" .md)
             if gh release view "$tag" >/dev/null 2>&1; then
-              gh release edit "$tag" --notes-file "$f" && echo "updated $tag"
+              cat "$f" docs/releases/footer.md > "$RUNNER_TEMP/notes.md"
+              gh release edit "$tag" --notes-file "$RUNNER_TEMP/notes.md" && echo "updated $tag"
             else
               echo "no release $tag yet - skipped"
             fi

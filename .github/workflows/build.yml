@@ -32,7 +32,26 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # The permanent release key, from the repository secrets. Without it a
+      # build still runs (debug-signed), but a release is refused below: an
+      # APK signed with another key cannot update the installed app.
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "SIGNING_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "signed with the release key"
+          else
+            echo "::warning::SIGNING_KEYSTORE_B64 not set - debug-signed build"
+          fi
+
       - name: Build release APK
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       # Two editions: pro (full manager with developer tools) and clean
@@ -81,20 +100,15 @@ jobs:
       - name: Release notes
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         run: |
-          NOTES=docs/releases/v$VER.md
-          if [ ! -f "$NOTES" ]; then
-            NOTES=release-body.md
-            cat > "$NOTES" <<'BODY'
-          Two editions, installable side by side:
-
-          - **CMF Stereo** (`clean`) - for everyday use: Nothing style with NDot type,
-            on/off, Mono/Stereo, earpiece and speaker level on a plain 1-10 scale.
-          - **CMF Stereo Pro** (`pro`) - the full manager with developer tools.
-
-          Needs the [CMF-true-stereo](https://github.com/Dr-Essence/CMF-true-stereo/releases)
-          module (v0.9.0+ for Mono/Stereo) and root. Debug-signed, for sideloading.
-          BODY
+          if [ -z "${SIGNING_KEYSTORE:-}" ]; then
+            echo "::error::No release key (SIGNING_KEYSTORE_B64 secret) - not publishing a release that could not update the installed app"
+            exit 1
           fi
+          # This version's notes (if any), then the footer every release carries.
+          : > release-body.md
+          [ -f "docs/releases/v$VER.md" ] && cat "docs/releases/v$VER.md" >> release-body.md
+          cat docs/releases/footer.md >> release-body.md
+          NOTES=release-body.md
           echo "NOTES=$NOTES" >> "$GITHUB_ENV"
 
       # Running this workflow by hand on main publishes a proper (non-
