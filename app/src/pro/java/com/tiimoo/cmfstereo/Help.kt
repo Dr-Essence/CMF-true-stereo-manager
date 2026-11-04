@@ -27,7 +27,8 @@ object Help {
                     "left/right (earpiece left, speaker right) by switching off the two " +
                     "places the phone folds the speaker to mono, and replaces Awinic's " +
                     "protection on media with a fixed amp attenuation. Use Mono for loud " +
-                    "listening. Switching needs a reboot. See 'Where the mono fold is'.",
+                    "listening. Switching restarts the audio HAL (a moment of silence) and falls back " +
+                    "to a reboot only when that cannot be done safely. See 'Where the mono fold is'.",
                 "stereo mono channels left right"
             ),
             HelpEntry(
@@ -63,7 +64,7 @@ object Help {
             HelpEntry("diff [seconds]", "Snapshots the mixer, waits, then shows what changed. Start or stop playback during the wait: this is how the media path on this device was found in the first place.", "diff snapshot compare"),
             HelpEntry("probe [dir]", "Full hardware dump - ALSA topology, all mixer controls, amplifier drivers, HAL configs, MediaTek's AudioParam tree. Only needed on hardware the module has not been mapped on. It is slow (a minute or two).", "probe dump hardware"),
             HelpEntry("report", "Folds the newest probe into one shareable text file at /sdcard/cmf-stereo-report.txt.", "report share"),
-            HelpEntry("channels [mono|stereo]", "Shows the running and staged channel mode, or stages one. Stereo patches this phone's own audio HAL and DSP config in the module overlay after SHA-256 checks against the analysed build, and refuses anything else. Takes effect after a reboot; two failed boots revert to mono. Needs module v0.9.0+.", "channels stereo mono"),
+            HelpEntry("channels [mono|stereo]", "Shows the running and staged channel mode, or stages one. Stereo patches this phone's own audio HAL and DSP config in the module overlay after SHA-256 checks against the analysed build, and refuses anything else. Applied at once by restarting the audio HAL (module v0.9.4+; refused during a call, undone if the HAL does not come back), otherwise after a reboot; two failed boots revert to mono. Needs module v0.9.0+.", "channels stereo mono"),
             HelpEntry("xml-patch / xml-revert", "Overlays an audio policy that widens the speaker port to stereo. On the CMF Phone 1 it is a no-op: the speaker port is already stereo. It exists for other hardware.", "xml policy")
         ),
 
@@ -72,7 +73,7 @@ object Help {
             HelpEntry("PLAYBACK_CTL / PLAYBACK_VALUE", "How 'audio is playing' is detected. Empty means scan /proc/asound for a RUNNING substream, which misses DSP-offload playback entirely. On this device media IS offloaded, so it is set to dsp_music_runtime_en - without which MODE=playback never engages while MODE=always works.", "playback detect offload"),
             HelpEntry("GUARD_CTL / GUARD_VALUE", "Apply the routing only while this control holds this value. Set to aw_dev_0_switch = Enable here, so the earpiece follows the speaker amp.", "guard"),
             HelpEntry("WATCH_INTERVAL", "How often the routing is re-asserted, in seconds. The HAL resets mixer controls on every route change, so this cannot be large. 2 is the default.", "interval poll"),
-            HelpEntry("CHANNELS", "mono or stereo. Set it with the Channels switch or 'stereoctl channels' rather than by hand: stereo needs files staged, and both need a reboot.", "channels stereo mono"),
+            HelpEntry("CHANNELS", "mono or stereo. Set it with the Channels switch or 'stereoctl channels' rather than by hand: stereo needs files staged, and the switch restarts the audio HAL (or waits for a reboot).", "channels stereo mono"),
             HelpEntry("STEREO_ATTEN_DB", "In stereo, the speaker amp is held at least this many dB down (0-30, default 6) through its own volume control, aw_dev_0_volume, which counts in 1/8 dB steps. It is the margin that stands in for Awinic's protection. Read every cycle, no restart needed.", "attenuation stereo volume"),
             HelpEntry("LOG_LEVEL", "debug, info or warn.", "log level"),
             HelpEntry("actions.conf syntax", "One action per line, applied in order:\n\n  ctl|<mixer control>|<value>\n  sysfs|<path>|<value>\n  prop|<property>|<value>\n\nThe original value of everything touched is saved and restored on stop.", "actions config syntax")

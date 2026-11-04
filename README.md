@@ -42,6 +42,9 @@ which adds the quick `status brief` the app asks for; older modules still work, 
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- Next build: Mono/Stereo applies at once with module v0.9.4 (the module restarts the audio HAL;
+  the app only shows "restart the phone" when that could not be done). Wording updated in both
+  editions and the Pro guide; compiled, not yet run on the phone.
 - v1.0.29: R8-shrunk release (clean 0.86 MB, pro 1.1 MB, built and checked locally),
   and the status read in a single root shell (its script checked against the module).
 - CMF Stereo Pro's new dB earpiece slider and its Channels card.

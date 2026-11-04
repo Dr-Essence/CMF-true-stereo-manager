@@ -195,7 +195,7 @@ private fun Controls(
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Choice("MONO", s.channelsStaged == "mono", ndot, Modifier.weight(1f), !busy) {
-                    if (s.channelsStaged != "mono") run("MONO AFTER RESTART") { StereoCtl.setChannels(false) }
+                    if (s.channelsStaged != "mono") run("MONO") { StereoCtl.setChannels(false) }
                 }
                 Choice("STEREO", s.channelsStaged == "stereo", ndot, Modifier.weight(1f), !busy) {
                     if (s.channelsStaged != "stereo") confirmStereo = true
@@ -212,7 +212,7 @@ private fun Controls(
             )
             if (pending) {
                 Spacer(Modifier.height(12.dp))
-                Body("Restart the phone to switch to ${s.channelsStaged}.", Green)
+                Body("Could not switch right away. Restart the phone to switch to ${s.channelsStaged}.", Green)
                 Spacer(Modifier.height(8.dp))
                 Pill("RESTART PHONE", ndot, enabled = !busy) { confirmReboot = true }
             }
@@ -249,11 +249,12 @@ private fun Controls(
             text = "Real left and right: earpiece left, speaker right.\n\n" +
                 "In stereo the speaker's automatic protection is off for music, so " +
                 "its level is held lower instead. Use Mono for loud listening.\n\n" +
-                "Takes effect after a restart.",
+                "Switches now: the sound stops for a moment, and music needs play " +
+                "again. If it cannot switch safely right away, it asks you to restart.",
             confirm = "SWITCH",
             onConfirm = {
                 confirmStereo = false
-                run("STEREO AFTER RESTART") { StereoCtl.setChannels(true) }
+                run("STEREO") { StereoCtl.setChannels(true) }
             },
             onDismiss = { confirmStereo = false }
         )

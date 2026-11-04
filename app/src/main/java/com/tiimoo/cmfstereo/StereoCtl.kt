@@ -45,7 +45,7 @@ object StereoCtl {
         val logLevel: String = "info",
         /** Channels the running system uses: "mono" or "stereo". */
         val channels: String = "mono",
-        /** Channels after the next reboot. Differs from [channels] until then. */
+        /** The chosen channels. Differs from [channels] only while a switch waits for a reboot. */
         val channelsStaged: String = "mono",
         /** False on modules older than v0.9.0, which have no channel modes. */
         val supportsChannels: Boolean = false,
@@ -132,9 +132,9 @@ object StereoCtl {
     fun setArmed(on: Boolean) = ctl(if (on) "on" else "off").out
 
     /**
-     * Stages mono or stereo. Takes effect after a reboot: stereo is a boot-time
-     * overlay of the audio HAL and the DSP config, built on the phone from its
-     * own vendor files after hash checks (module README, "Mono and stereo").
+     * Chooses mono or stereo. Module v0.9.4+ applies it at once by restarting the
+     * audio HAL on the wanted files; when that cannot be done safely (or on older
+     * modules) it is staged and the status shows it pending until a reboot.
      */
     fun setChannels(stereo: Boolean) = ctl(if (stereo) "channels stereo" else "channels mono").out
 

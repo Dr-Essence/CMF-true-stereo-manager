@@ -407,14 +407,17 @@ private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, ()
                         "Without Awinic's processing, media on the speaker relies on the " +
                         "amp's hardware cut-outs and a fixed attenuation. Use Mono for loud " +
                         "listening and back off at the first distortion.\n\n" +
-                        "Needs a reboot. Two failed boots put it back to mono automatically."
+                        "Applied at once by restarting the audio HAL (a moment of silence; " +
+                        "players pause). If that cannot be done safely - no verified files, a " +
+                        "call in progress, or the HAL does not come back - it is undone and " +
+                        "waits for a reboot. Two failed boots put it back to mono automatically."
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     confirmStereo = false
                     action("channels") { StereoCtl.setChannels(true) }
-                }) { Text("Stage stereo") }
+                }) { Text("Switch to stereo") }
             },
             dismissButton = { TextButton(onClick = { confirmStereo = false }) { Text("Cancel") } }
         )
