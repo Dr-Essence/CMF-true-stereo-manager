@@ -34,16 +34,17 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.29** (both editions, about 1 MB each). Works best with module v0.9.3,
-which adds the quick `status brief` the app asks for; older modules still work, just slower.
+**Current release: v1.0.35** (both editions, about 1 MB each), signed with the permanent key:
+later releases install over it. Works best with module v0.9.5 (live switching, orientation
+swap).
 
 **Verified on the phone**
 - CMF Stereo (clean): NDot 77 JP Extended loads from the phone, the glow and dot levels
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
-- Next build: Stereo text says left and right follow the screen (module v0.9.5 swaps them with
-  the rotation).
+- v1.0.35: the Stereo text (left and right follow the screen), and the Mono/Stereo buttons
+  switching live (module v0.9.4+).
 - Next build: Mono/Stereo applies at once with module v0.9.4 (the module restarts the audio HAL;
   the app only shows "restart the phone" when that could not be done). Wording updated in both
   editions and the Pro guide; compiled, not yet run on the phone.
@@ -54,10 +55,9 @@ which adds the quick `status brief` the app asks for; older modules still work, 
 - Either edition on a phone without NDot (should fall back to monospace).
 
 **Pending**
-- **Permanent signing key:** CI now signs with one fixed release key (checked locally:
-  certificate SHA-256 `35:65:18:89:…:27:EA:8B:FC`) once its four repository secrets are added.
-  The next release after that needs the old app uninstalled one last time; every release after
-  it updates in place, also through Komi Store. A release without the key is refused.
+- **Permanent signing key:** in place from v1.0.35 (certificate SHA-256
+  `35:65:18:89:…:27:EA:8B:FC`). v1.0.35 needs the old app uninstalled one last time; every
+  release after it updates in place, also through Komi Store.
 
 **Fixed recently**
 - v1.0.29: the APK was 96.7 MB. Release builds were not shrunk, and they carried the whole
