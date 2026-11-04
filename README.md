@@ -43,6 +43,8 @@ swap).
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- Next build: the NDot-style icon (a speaker and two waves as a dot matrix, with Nothing's red
+  dot, on black) and its themed-icon layer. Rendered and checked here; not yet seen on the phone.
 - v1.0.35: the Stereo text (left and right follow the screen), and the Mono/Stereo buttons
   switching live (module v0.9.4+).
 - Next build: Mono/Stereo applies at once with module v0.9.4 (the module restarts the audio HAL;
