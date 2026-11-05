@@ -97,7 +97,14 @@ Magisk / KernelSU / APatch.
   Notes in `/sdcard/cmf-study-notes.txt`, raw files in `/sdcard/cmf-study-raw.tgz`. The
   measurement is checked with `modetest/study_sim.py` (the same steps on a simulated driver:
   levels read exactly, simulated clipping found, recordings aligned within 10 ms); the Kotlin
-  compiles against android-35 here and in CI. Not yet run on the phone.
+  compiles against android-35 here and in CI. First run on the phone (the stereo-only build):
+  the phone offers no `UNPROCESSED` source (the app fell back to `VOICE_RECOGNITION`), the
+  HAL also wrote its own raw 24-bit two-microphone capture (`hal_capturedataprovider_DspRaw`),
+  and a click when recording started fooled the microphones' marker search, so that CSV was
+  misaligned. Now the microphones are lined up on the HAL's copy of the playback by their
+  loudness envelopes (on that run: 0.76 app, 0.79 raw correlation, the same lag as found by
+  hand with `modetest/study_analyse.py`), and the HAL's raw capture is analysed as well (mics
+  2 and 3). Next run not yet done.
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS

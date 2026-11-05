@@ -25,6 +25,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.ln
 import kotlin.math.log10
 import kotlin.math.max
 import kotlin.math.min
@@ -359,30 +360,75 @@ class StudyActivity : Activity() {
         return "${f1(db(fund))},${hs.joinToString(",") { f1(db(it)) }},${"%.2f".format(thd)},${f1(db(pk))}"
     }
 
+    /** The HAL's own microphone capture (8.24 fixed point in 32 bits), if it wrote one. */
+    private fun rawMics(t: Take): Array<FloatArray>? = t.dumps.listFiles()
+        ?.filter { it.name.startsWith("hal_capturedataprovider_") && it.name.endsWith(".pcm") && it.name.contains("2ch") }
+        ?.maxByOrNull { it.length() }?.let { readPcm(it, false) }
+
     private fun micChannels(t: Take): List<(Int) -> Double> = listOf(
         { i: Int -> if (i in 0 until t.micFrames) t.mic[i * 2] / 32768.0 else 0.0 },
         { i: Int -> if (i in 0 until t.micFrames) t.mic[i * 2 + 1] / 32768.0 else 0.0 })
 
-    private fun micOffset(t: Take, marker: Int, notes: StringBuilder): Int? {
-        val m = micChannels(t)
-        return listOf(offset(m[0], t.micFrames, marker, "mic0", notes), offset(m[1], t.micFrames, marker, "mic1", notes))
-            .filterNotNull().minOrNull()
+    /**
+     * Where a microphone recording sits against the HAL's copy of the playback:
+     * the lag (in 10 ms blocks, up to 10 s) at which their loudness envelopes
+     * match best. Measured on the phone: a click when recording starts fooled a
+     * marker search, the envelope match lined them up (correlation 0.79).
+     */
+    private fun lag(ref: (Int) -> Double, refN: Int, x: (Int) -> Double, xN: Int, what: String, notes: StringBuilder): Int? {
+        val blk = rate / 100
+        fun env(f: (Int) -> Double, n: Int) = DoubleArray(n / blk) { b ->
+            var e = 0.0
+            for (i in b * blk until (b + 1) * blk) { val v = f(i); e += v * v }
+            ln(sqrt(e / blk) + 1e-9)
+        }
+        val a = env(ref, refN); val b = env(x, xN)
+        val am = a.average()
+        var best = -2.0; var bestL = -1
+        for (l in 0 until min(1000, b.size)) {
+            val n = min(a.size, b.size - l)
+            if (n < 500) break
+            var sa = 0.0; var sb = 0.0; var sab = 0.0; var bm = 0.0
+            for (i in 0 until n) bm += b[i + l]
+            bm /= n
+            for (i in 0 until n) {
+                val da = a[i] - am; val db = b[i + l] - bm
+                sab += da * db; sa += da * da; sb += db * db
+            }
+            val c = sab / sqrt(sa * sb + 1e-30)
+            if (c > best) { best = c; bestL = l }
+        }
+        notes.append("$what lag ${bestL * blk} frames, correlation ${"%.2f".format(best)}\n")
+        return if (best > 0.5) bestL * blk else null
     }
 
     private fun analyseStereo(segs: List<Seg>, t: Take, notes: StringBuilder): String {
         val marker = segs[0].start
-        val m = micChannels(t)
-        val mo = micOffset(t, marker, notes)
         val hal = largest(t.dumps, "hal_streamout", ".wav")?.let { readPcm(it, true) }
         notes.append("stereo hal file: ${largest(t.dumps, "hal_streamout", ".wav")?.name}\n")
         val hl = channel(hal?.get(0)); val hr = channel(hal?.get(1))
-        val ho = if (hal != null) offset(hl, hal[0].size, marker, "stereo hal", notes) else null
+        val hn = hal?.get(0)?.size ?: 0
+        val ho = if (hal != null) offset(hl, hn, marker, "stereo hal", notes) else null
+        val both: (Int) -> Double = { i -> hl(i) + hr(i) }
+        // Microphones 0, 1: what Android gave the app; 2, 3: the driver's own raw capture.
+        val app = micChannels(t)
+        val raw = rawMics(t)
+        val mics = ArrayList<Pair<(Int) -> Double, Int?>>()
+        if (ho != null) {
+            val la = lag(both, hn, { i -> app[0](i) + app[1](i) }, t.micFrames, "app mics", notes)
+            app.forEach { mics.add(it to la?.let { l -> ho + l }) }
+            if (raw != null) {
+                val r0 = channel(raw[0], 256.0); val r1 = channel(raw[1], 256.0)
+                val lr = lag(both, hn, { i -> r0(i) + r1(i) }, raw[0].size, "raw mics", notes)
+                listOf(r0, r1).forEach { mics.add(it to lr?.let { l -> ho + l }) }
+            }
+        }
         val sb = StringBuilder("driver,freq,level_dbfs,hal_l_db,hal_r_db,mic,fund_db,h2_db,h3_db,h4_db,h5_db,thd_pct,peak_db\n")
         for (s in segs.drop(1)) {
             val ha = if (ho != null) s.start + ho + rate / 10 else -1
             val hcols = if (ho != null) "${f1(db(tone(hl, ha, win, s.f)))},${f1(db(tone(hr, ha, win, s.f)))}" else ","
-            for (mi in 0..1) {
-                val mcols = if (mo != null) micCols(m[mi], s.start + mo + rate / 10, s.f) else ",,,,,,"
+            mics.forEachIndexed { mi, (x, off) ->
+                val mcols = if (off != null) micCols(x, s.start + off + rate / 10, s.f) else ",,,,,,"
                 sb.append("${s.name},${s.f.toInt()},${s.db},$hcols,$mi,$mcols\n")
             }
         }
@@ -395,8 +441,6 @@ class StudyActivity : Activity() {
      */
     private fun analyseMono(segs: List<Seg>, t: Take, notes: StringBuilder): String {
         val marker = segs[0].start
-        val m = micChannels(t)
-        val mo = micOffset(t, marker, notes)
         val hal = largest(t.dumps, "hal_streamout", ".wav")?.let { readPcm(it, true) }
         val inF = t.dumps.listFiles()
             ?.filter { it.name.startsWith("adsp_Playback_") && it.name.contains("_in_") && it.name.endsWith(".pcm") }
@@ -413,6 +457,11 @@ class StudyActivity : Activity() {
         val ol = channel(dOut?.get(0), 256.0); val or = channel(dOut?.get(1), 256.0)
         val v0 = channel(dIv?.get(0)); val v1 = channel(dIv?.get(1))
         val ho = if (hal != null) offset(hl, hal[0].size, marker, "mono hal", notes) else null
+        val raw = rawMics(t)
+        val m = raw?.let { listOf(channel(it[0], 256.0), channel(it[1], 256.0)) } ?: micChannels(t)
+        val mN = raw?.get(0)?.size ?: t.micFrames
+        notes.append("mono mics: ${if (raw != null) "driver raw capture" else "app recording"}\n")
+        val mo = if (ho != null && hal != null) lag(hl, hal[0].size, { i -> m[0](i) + m[1](i) }, mN, "mono mics", notes)?.let { ho + it } else null
         val io = if (dIn != null) offset(il, dIn[0].size, marker, "dsp in", notes) else null
         val oo = if (dOut != null) offset(ol, dOut[0].size, marker, "dsp out", notes) ?: io else io
         val sb = StringBuilder("driver,freq,level_dbfs,hal_l_db,hal_r_db,dsp_in_l_db,dsp_in_r_db,dsp_out_l_db,dsp_out_r_db," +
