@@ -44,11 +44,14 @@ android {
         create("pro") {
             dimension = "edition"
             resValue("string", "app_name", "CMF Stereo Pro")
+            // Quick Settings tile: each edition named, so two installed ones differ.
+            resValue("string", "qs_label", "Stereo Pro")
         }
         create("clean") {
             dimension = "edition"
             applicationIdSuffix = ".clean"
             resValue("string", "app_name", "CMF Stereo")
+            resValue("string", "qs_label", "Stereo")
         }
     }
 

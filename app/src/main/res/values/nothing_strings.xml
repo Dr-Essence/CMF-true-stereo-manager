@@ -9,7 +9,6 @@
     <string name="tile_no_module">CMF true stereo module not installed</string>
     <string name="tile_no_root">Needs root access for CMF Stereo</string>
     <!-- Quick Settings tile. -->
-    <string name="qs_label">Stereo</string>
     <string name="qs_stereo">Earpiece + speaker</string>
     <string name="qs_mono">Mono</string>
     <string name="qs_switching">Switching…</string>

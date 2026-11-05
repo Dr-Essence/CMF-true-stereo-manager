@@ -43,7 +43,8 @@ Magisk / KernelSU / APatch.
 
 **Not tested on a phone yet**
 - Next build: **Stereo in Nothing's Settings and Quick Settings** (both editions).
-  - Quick Settings tile "Stereo": tap switches Mono / Stereo (shows "Switching…" while the
+  - Quick Settings tile "Stereo" (clean) / "Stereo Pro" (Pro; both used to say "Stereo",
+    seen on the phone): tap switches Mono / Stereo (shows "Switching…" while the
     audio HAL restarts), long-press opens the app. Standard Android API, no hook.
   - Nothing Settings > Sound > "Stereo speakers", right above Dirac (order -61): a live
     summary (Stereo / Mono / off / after a restart) and Nothing's own switch, tap opens the
