@@ -77,6 +77,17 @@ Magisk / KernelSU / APatch.
   rotation 270): AAUDIO, AAUDIO SHARED and FLOAT come out on the correct side. COMPRESSED
   shows "this phone refuses MP3 offload" and plays nothing (Android's offload check said no,
   so the test stops there).
+  New: DRIVER STUDY, to design protection for the earpiece and the speaker from measurements.
+  Upright (rotation 0: no swap, left = earpiece, right = speaker), media volume at maximum for
+  the run, it plays 300 ms tones on the earpiece and then the speaker (11 frequencies,
+  100 Hz-8 kHz, at -30 to -3 dBFS, never above -3), records both microphones raw
+  (`UNPROCESSED`, 48 kHz, 2 channels) and turns on the HAL's own playback and microphone
+  recordings. It then measures each tone: the level that reached the HAL on each channel
+  (after Dirac), and the fundamental, harmonics 2-5 and distortion each microphone heard,
+  into `/sdcard/cmf-study.csv` (raw files in `/sdcard/cmf-study-raw.tgz`). The measurement
+  is checked here with `modetest/study_sim.py` (the same steps on a simulated driver: levels
+  read exactly, simulated clipping found, recordings aligned within 10 ms). Compiled by CI;
+  not yet run on the phone.
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS

@@ -54,6 +54,12 @@ class MainActivity : Activity() {
                 setOnClickListener { startActivity(Intent(this@MainActivity, cls)) }
             }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 32 })
         }
+        // DRIVER STUDY: tones on each driver, recorded by the microphones and the HAL.
+        col.addView(Button(this).apply {
+            text = "DRIVER STUDY (about 2 min, phone flat on a table)"
+            textSize = 16f
+            setOnClickListener { startActivity(Intent(this@MainActivity, StudyActivity::class.java)) }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 64 })
         // The audio HAL records what it receives (vendor.streamout.pcm.dump) once
         // that property is set and the same key reaches it through
         // setParameters (AudioALSAHardware::setParameters -> dynamicSetAudioDump).

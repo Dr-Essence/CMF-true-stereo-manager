@@ -3,6 +3,8 @@
 
     <!-- AudioManager.setParameters: turns the audio HAL's own PCM recording on. -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- DRIVER STUDY: the microphones hear what the earpiece and speaker play. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:label="CMF L/R Test"
@@ -54,6 +56,9 @@
             android:process=":aaudioshared" android:screenOrientation="sensorLandscape" />
         <activity android:name=".FloatTest" android:exported="false"
             android:process=":float" android:screenOrientation="sensorLandscape" />
+        <!-- DRIVER STUDY: upright, so neither Android nor the module swaps. -->
+        <activity android:name=".StudyActivity" android:exported="false"
+            android:process=":study" android:screenOrientation="portrait" />
         <!-- MP3 decoded by the audio DSP (compressed offload), as music players do. -->
         <activity android:name=".OffloadTest" android:exported="false"
             android:process=":offload" android:screenOrientation="sensorLandscape" />
