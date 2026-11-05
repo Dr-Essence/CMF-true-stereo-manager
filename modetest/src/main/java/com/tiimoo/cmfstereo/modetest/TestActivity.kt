@@ -20,7 +20,7 @@ import kotlin.math.sin
  * screen, and shows the tuning Dirac reports and the screen rotation the audio
  * system is told.
  */
-abstract class TestActivity(private val mode: String) : Activity() {
+abstract class TestActivity(private val mode: String, private val withEffect: Boolean = false) : Activity() {
     @Volatile private var playing = false
     @Volatile private var dirac = "asking for root..."
     @Volatile private var halRot = "?"
@@ -143,11 +143,17 @@ abstract class TestActivity(private val mode: String) : Activity() {
             .setBufferSizeInBytes(buf.size * 2)
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
+        // VLC attaches a DynamicsProcessing effect to its own session (seen in
+        // dumpsys media.audio_flinger); this does the same, left neutral.
+        val fx = if (withEffect) try {
+            android.media.audiofx.DynamicsProcessing(0, track.audioSessionId, null).apply { enabled = true }
+        } catch (e: Throwable) { null } else null
         try {
             track.play()
             while (playing) track.write(buf, 0, buf.size)
             track.stop()
         } finally {
+            fx?.release()
             track.release()
         }
     }
@@ -155,5 +161,6 @@ abstract class TestActivity(private val mode: String) : Activity() {
 
 class MusicTest : TestActivity("MUSIC")
 class MovieTest : TestActivity("MOVIE")
+class MovieEffectTest : TestActivity("MOVIE + EFFECT", withEffect = true)
 class GameTest : TestActivity("GAME")
 class SpeechTest : TestActivity("SPEECH")

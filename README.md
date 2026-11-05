@@ -60,6 +60,9 @@ Magisk / KernelSU / APatch.
   v1.0.0): the beep reaches the HAL on the RIGHT channel (`hal_streamout`), the module's swap
   puts it back on the left (`hal_playbackhandler`), and the DSP passes it on unchanged: the
   other swap happens before the HAL, with AudioFlinger's own swap already switched off.
+  MOVIE + EFFECT: the MOVIE beep with a DynamicsProcessing effect on its own session, as VLC
+  has, to check whether Android's rotation swap skips such streams (VLC is the one app found
+  that it does not swap).
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS

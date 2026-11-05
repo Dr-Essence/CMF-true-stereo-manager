@@ -32,6 +32,11 @@
         <activity android:name=".MovieTest" android:exported="false"
             android:process="org.videolan.vlc.cmftest" android:screenOrientation="sensorLandscape" />
 
+        <!-- MOVIE again, with a DynamicsProcessing effect on its own session, as VLC
+             has: does Android's rotation swap skip a stream with its own effects? -->
+        <activity android:name=".MovieEffectTest" android:exported="false"
+            android:process="org.videolan.vlc.cmftest2" android:screenOrientation="sensorLandscape" />
+
         <!-- Contains "com.google.android.apps.maps" (navigation list): SPEECH. -->
         <activity android:name=".SpeechTest" android:exported="false"
             android:process="com.google.android.apps.maps.cmftest" android:screenOrientation="sensorLandscape" />

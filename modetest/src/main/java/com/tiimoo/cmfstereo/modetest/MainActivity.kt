@@ -38,6 +38,7 @@ class MainActivity : Activity() {
         listOf(
             "MUSIC" to MusicTest::class.java,
             "MOVIE" to MovieTest::class.java,
+            "MOVIE + EFFECT" to MovieEffectTest::class.java,
             "GAME" to GameTest::class.java,
             "SPEECH" to SpeechTest::class.java
         ).forEach { (name, cls) ->
