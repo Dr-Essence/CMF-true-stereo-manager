@@ -86,7 +86,18 @@ object StereoCtl {
      * modules older than v0.9.3 ignore the word and print the full status,
      * which parses the same.
      */
-    fun status(): Status {
+    /**
+     * Set once the app process starts (SettingsTileProvider.onCreate), so every
+     * reading also reaches Nothing Settings through StateCache.
+     */
+    @Volatile var appContext: android.content.Context? = null
+
+    /** Reads the module's state (root), and hands it to StateCache. */
+    fun status(): Status = read().also { s ->
+        appContext?.let { try { com.tiimoo.cmfstereo.nothing.StateCache.publish(it, s) } catch (_: Throwable) {} }
+    }
+
+    private fun read(): Status {
         val r = Shell.run(
             """
             echo "@uid=${'$'}(id -u)"

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.database.ContentObserver
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -65,6 +66,7 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
     private val setEntries = m(list, "Q1", Array<CharSequence>::class.java)
     private val setValues = m(list, "R1", Array<CharSequence>::class.java)
     private val setValue = m(list, "S1", String::class.java)
+    private val getValue = m(list, "N1").also { check(it.returnType == String::class.java) }
     private val newSwitch = switchCls.getConstructor(Context::class.java)
     private val newDrop = dropCls.getConstructor(Context::class.java)
     private val newCategory = category.getConstructor(Context::class.java)
@@ -120,6 +122,13 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
     // ---- the page ------------------------------------------------------------
 
     private class Rows(val screen: Any) {
+        /**
+         * False until the real state is shown. Seen on the phone: a dropdown
+         * reports its first entry as a change when its spinner is first bound
+         * while it has no value yet (DropDownPreference), so every open reset
+         * the levels and protection until this guard.
+         */
+        @Volatile var ready = false
         var armed: Any? = null; var stereo: Any? = null
         var ear: Any? = null; var spk: Any? = null
         var boost: Any? = null; var bass: Any? = null; var leveller: Any? = null; var limit: Any? = null
@@ -137,7 +146,10 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
         fun sw(key: String, title: String, summary: String?, parent: Any, onChange: (Boolean) -> Unit): Any =
             place(newSwitch.newInstance(ctx), parent).also { p ->
                 setKey.invoke(p, key); setTitle.invoke(p, title); summary?.let { setSummary.invoke(p, it) }
-                setOnChange.invoke(p, listener(setOnChange.parameterTypes[0]) { a -> onChange(a[1] as Boolean); true })
+                setOnChange.invoke(p, listener(setOnChange.parameterTypes[0]) { a ->
+                    if (!rows.ready) return@listener false
+                    onChange(a[1] as Boolean); true
+                })
             }
         fun drop(key: String, title: String, entries: List<String>, values: List<String>, parent: Any, onChange: (String) -> Unit): Any =
             place(newDrop.newInstance(ctx), parent).also { p ->
@@ -146,6 +158,9 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
                 setEntries.invoke(p, entries.toTypedArray<CharSequence>()); setValues.invoke(p, values.toTypedArray<CharSequence>())
                 setOnChange.invoke(p, listener(setOnChange.parameterTypes[0]) { a ->
                     val v = a[1] as String
+                    // Only a real choice: not before the state is shown, and not
+                    // the value it already holds (a rebind re-selecting it).
+                    if (!rows.ready || v == getValue.invoke(a[0])) return@listener false
                     setSummary.invoke(a[0], entries.getOrElse(values.indexOf(v)) { v })
                     onChange(v); true
                 })
@@ -175,6 +190,15 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
         }
         setAll(rows, false)
         load(rows, act)
+        // Kept in step with every change, wherever it is made (the apps, the
+        // Quick Settings tile, stereoctl, the module itself): the app notifies
+        // this uri, as Settings' own pages are notified.
+        val observer = object : ContentObserver(main) {
+            override fun onChange(selfChange: Boolean) {
+                if (act.isDestroyed) act.contentResolver.unregisterContentObserver(this) else load(rows, act)
+            }
+        }
+        act.contentResolver.registerContentObserver(Uri.parse("content://${BuildConfig.APPLICATION_ID}.settingstile/state"), false, observer)
     }
 
     private val main = Handler(Looper.getMainLooper())
@@ -185,8 +209,12 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
     }, "cmf-settings").start()
 
     private fun set(rows: Rows, act: Activity, what: String, value: String) {
-        setAll(rows, false)
-        if (what == "channels" || what == "armed") rows.stereo?.let { setSummary.invoke(it, "Switching…") }
+        // The tapped row already shows its new value; only Mono / Stereo, which
+        // restarts the audio for a moment, holds the two switches until it is done.
+        if (what == "channels" || what == "armed") {
+            listOf(rows.armed, rows.stereo).forEach { it?.let { p -> setEnabled.invoke(p, false) } }
+            rows.stereo?.let { setSummary.invoke(it, "Switching…") }
+        }
         Thread({
             val b = call(act, "setPage", Bundle().apply { putString("what", what); putString("value", value) })
             main.post { if (b != null) show(rows, b) else setAll(rows, true) }
@@ -217,6 +245,7 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
         rows.bass?.let { val v = b.getString("bass") ?: "medium"; setValue.invoke(it, v); setSummary.invoke(it, named(v, listOf("Off", "Light", "Medium", "Strong"))) }
         rows.leveller?.let { val v = b.getString("leveller") ?: "off"; setValue.invoke(it, v); setSummary.invoke(it, named(v, listOf("Off", "Low", "Mid", "High"))) }
         rows.limit?.let { setChecked.invoke(it, b.getBoolean("limit", true)) }
+        rows.ready = true
         setAll(rows, ok)
         // Speaker level and protection exist in stereo only.
         val inStereo = ok && b.getString("channels") == "stereo"

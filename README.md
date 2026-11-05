@@ -58,7 +58,19 @@ Magisk / KernelSU / APatch.
     uses were read from Settings 16.0.0 and checked against its bytecode (dexdump: all
     present, public, exact signatures), and are checked again when Settings starts: if one
     is missing, nothing is hooked and the row opens the app. State and changes go through the
-    app's provider (`getPageState`, `setPage`), on a thread of its own. It is Settings' own tile injection (`com.android.settings.action.EXTRA_SETTINGS`,
+    app's provider (`getPageState`, `setPage`), on a thread of its own.
+  - Fixed (seen on the phone): opening the page reset the levels and protection every time.
+    A dropdown (`DropDownPreference`) reports its first entry as a change when its spinner is
+    first bound while it has no value yet, and the page filled the values in a moment later.
+    The page now ignores every change until the real state is shown, and a dropdown's
+    "change" to the value it already holds.
+  - Live state, no root to look: the app keeps the last state it read (StateCache); every
+    reading publishes it and, when something changed, notifies
+    `content://<app>.settingstile/state` (the page listens and updates while open) and the
+    Sound row's summary uri (Settings refreshes it). Changes made outside the apps
+    (stereoctl, the Action button, the module switching itself to mono) reach it through the
+    provider's `stateChanged`, which module v1.0.6 calls. Seen on the phone before: Android
+    blocking Magisk's toasts for exceeding the quota (one per root read). It is Settings' own tile injection (`com.android.settings.action.EXTRA_SETTINGS`,
     category `com.android.settings.category.ia.sound`), drawn by Settings in its style;
     Settings calls the summary and the switch on a background thread (read from Nothing
     Settings 16.0.0). Settings only takes such tiles from system apps (TileUtils checks

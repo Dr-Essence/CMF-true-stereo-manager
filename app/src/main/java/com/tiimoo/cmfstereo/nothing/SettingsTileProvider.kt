@@ -19,16 +19,19 @@ import com.tiimoo.cmfstereo.StereoLevels
  */
 class SettingsTileProvider : ContentProvider() {
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
-        val caller = callingPackage
-        if (caller != SETTINGS && caller != context?.packageName) return null
         val ctx = context ?: return null
+        // The module tells the app of changes made outside it (stereoctl, the
+        // Action button, its own switch back to mono): a fresh reading follows.
+        if (method == "stateChanged") { StateCache.refreshAsync(); return Bundle() }
+        val caller = callingPackage
+        if (caller != SETTINGS && caller != ctx.packageName) return null
         return try {
             when (method) {
                 "getDynamicSummary" -> Bundle().apply {
-                    putString("com.android.settings.summary", summary(ctx, StereoCtl.status()))
+                    putString("com.android.settings.summary", summary(ctx, state(ctx)))
                 }
                 // The Nothing Settings page (SettingsPage): its whole state, and one change.
-                "getPageState" -> pageState(StereoCtl.status())
+                "getPageState" -> state(ctx)
                 "setPage" -> {
                     val what = extras?.getString("what") ?: return null
                     val value = extras.getString("value") ?: return null
@@ -43,8 +46,7 @@ class SettingsTileProvider : ContentProvider() {
                         "limit" -> StereoCtl.setEarpieceLimit(value == "on")
                         else -> return null
                     }
-                    ctx.contentResolver.notifyChange(Uri.parse("content://$authority/getDynamicSummary/$KEY"), null)
-                    pageState(StereoCtl.status()).apply { putString("out", out.lineSequence().firstOrNull()?.take(160)) }
+                    StateCache.refresh().apply { putString("out", out.lineSequence().firstOrNull()?.take(160)) }
                 }
                 else -> null
             }
@@ -53,36 +55,30 @@ class SettingsTileProvider : ContentProvider() {
         }
     }
 
-    private fun pageState(s: StereoCtl.Status) = Bundle().apply {
-        putBoolean("rooted", s.rooted)
-        putBoolean("installed", s.installed)
-        putBoolean("armed", s.armed)
-        putString("channels", s.channels)
-        putString("staged", s.channelsStaged)
-        putString("build", s.build)
-        putInt("earLevel", StereoLevels.earpieceLevel(s.gain) ?: -1)
-        putInt("spkLevel", StereoLevels.speakerLevel(s.stereoAttenDb))
-        putBoolean("supportsProtect", s.supportsProtect)
-        putBoolean("protRunning", s.protRunning)
-        putInt("boost", s.speakerBoost)
-        putString("bass", s.bassProtect)
-        putBoolean("supportsLeveller", s.supportsLeveller)
-        putString("leveller", s.earpieceLeveller)
-        putBoolean("limit", s.earpieceLimit)
+    /**
+     * The stored state at once (no root); read fresh when there is none yet, or
+     * in the background when it is older than five minutes (a change nobody
+     * announced).
+     */
+    private fun state(ctx: android.content.Context): Bundle {
+        val c = StateCache.cached(ctx) ?: return StateCache.refresh()
+        if (StateCache.ageMs(ctx) > 5 * 60_000) StateCache.refreshAsync()
+        return c
     }
 
-    private val authority get() = "${context?.packageName}.settingstile"
-
-    private fun summary(ctx: android.content.Context, s: StereoCtl.Status): String = when {
-        !s.rooted -> ctx.getString(R.string.tile_no_root)
-        !s.installed -> ctx.getString(R.string.tile_no_module)
-        !s.armed -> ctx.getString(R.string.tile_off)
-        s.channels != s.channelsStaged -> ctx.getString(R.string.tile_after_restart, s.channelsStaged)
-        s.channels == "stereo" -> ctx.getString(R.string.tile_stereo)
+    private fun summary(ctx: android.content.Context, b: Bundle): String = when {
+        !b.getBoolean("rooted") -> ctx.getString(R.string.tile_no_root)
+        !b.getBoolean("installed") -> ctx.getString(R.string.tile_no_module)
+        !b.getBoolean("armed") -> ctx.getString(R.string.tile_off)
+        b.getString("channels") != b.getString("staged") -> ctx.getString(R.string.tile_after_restart, b.getString("staged"))
+        b.getString("channels") == "stereo" -> ctx.getString(R.string.tile_stereo)
         else -> ctx.getString(R.string.tile_mono)
     }
 
-    override fun onCreate() = true
+    override fun onCreate(): Boolean {
+        StereoCtl.appContext = context?.applicationContext
+        return true
+    }
     override fun query(u: Uri, p: Array<out String>?, s: String?, a: Array<out String>?, o: String?): Cursor? = null
     override fun getType(uri: Uri): String? = null
     override fun insert(uri: Uri, values: ContentValues?): Uri? = null
@@ -91,6 +87,5 @@ class SettingsTileProvider : ContentProvider() {
 
     private companion object {
         const val SETTINGS = "com.android.settings"
-        const val KEY = "cmf_stereo"
     }
 }
