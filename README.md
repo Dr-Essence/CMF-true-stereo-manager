@@ -73,7 +73,10 @@ Magisk / KernelSU / APatch.
   on the speaker). Each screen shows what Android granted (MMAP used or not, offloaded or
   not) and the output thread that plays it, read from `dumpsys media.audio_flinger` as
   root. The native player was compiled here with NDK r27c (`-Wall -Werror`); the Kotlin side
-  is compiled by CI only (Maven was rate-limited here). Not yet run on the phone.
+  is compiled by CI only (Maven was rate-limited here). Run on the phone (module v1.0.2,
+  rotation 270): AAUDIO, AAUDIO SHARED and FLOAT come out on the correct side. COMPRESSED
+  shows "this phone refuses MP3 offload" and plays nothing (Android's offload check said no,
+  so the test stops there).
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS
