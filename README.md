@@ -42,6 +42,10 @@ Magisk / KernelSU / APatch.
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- Next build: DRIVER STUDY's Mono part finds its marker when the HAL's and DSP's files start
+  right on it (seen on the phone: the Mono CSV came out empty and was analysed by hand);
+  texts in both editions name the module's protection where they described stereo as a
+  fixed attenuation only. Kotlin compiled here; not yet run on the phone.
 - v1.0.56: stereo protection settings (module v1.0.4+, `stereoctl protect`). Clean: a
   SPEAKER BOOST row (0-6), DEEP BASS GUARD (off / light / mid / strong) and an EARPIECE
   LIMITER switch, shown in stereo. Pro: the same in the Channels card, with whether the

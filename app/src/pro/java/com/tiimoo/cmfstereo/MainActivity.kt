@@ -360,7 +360,8 @@ private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, ()
                     "Stereo: earpiece plays the left channel, speaker the right; swapped " +
                         "when the phone is turned the other way (module v0.9.5+). Awinic's speaker " +
                         "protection is off for media; the amp is held " +
-                        "${s.stereoAttenDb} dB down instead. Calls keep protection."
+                        "${s.stereoAttenDb} dB down instead, and the module's own protection " +
+                        "(module v1.0.4+) holds the deep bass and the earpiece. Calls keep Awinic's."
                 else
                     "Mono: stock audio. Both drivers play the full mix, with Awinic's " +
                         "speaker protection.",
@@ -459,7 +460,8 @@ private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, ()
                         "own vendor files are patched in the module overlay after hash " +
                         "checks; anything unrecognised is refused.\n\n" +
                         "Without Awinic's processing, media on the speaker relies on the " +
-                        "amp's hardware cut-outs and a fixed attenuation. Use Mono for loud " +
+                        "amp's hardware cut-outs, a fixed attenuation and the module's own " +
+                        "protection (deep bass guard, earpiece limiter). Use Mono for loud " +
                         "listening and back off at the first distortion.\n\n" +
                         "Applied at once by restarting the audio HAL (a moment of silence; " +
                         "players pause). If that cannot be done safely - no verified files, a " +

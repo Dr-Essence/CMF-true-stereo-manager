@@ -312,7 +312,8 @@ private fun Controls(
             title = "STEREO",
             text = "Real left and right: earpiece left, speaker right.\n\n" +
                 "In stereo the speaker's automatic protection is off for music, so " +
-                "its level is held lower instead. Use Mono for loud listening.\n\n" +
+                "its level is held lower, and its deepest bass is held back when it " +
+                "gets loud. Use Mono for loud listening.\n\n" +
                 "Switches now: the sound stops for a moment, and music needs play " +
                 "again. If it cannot switch safely right away, it asks you to restart.",
             confirm = "SWITCH",

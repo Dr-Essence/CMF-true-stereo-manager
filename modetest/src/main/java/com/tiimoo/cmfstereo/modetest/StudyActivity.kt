@@ -335,6 +335,10 @@ class StudyActivity : Activity() {
         var floor = 1e-9
         for (b in 0 until min(30, frames / blk)) floor = max(floor, tone(x, b * blk, blk, 1000.0))
         for (b in 0 until frames / blk - 1) if (tone(x, b * blk, blk, 1000.0) > floor * 10) return b * blk
+        // Measured on the phone (Mono part): the HAL's and DSP's files can start
+        // right on the marker, so there is no quiet stretch to compare against.
+        // The marker is 1 kHz at -12 dBFS: the first block above -26 dBFS there.
+        for (b in 0 until frames / blk - 1) if (tone(x, b * blk, blk, 1000.0) > 0.05) return b * blk
         return -1
     }
 

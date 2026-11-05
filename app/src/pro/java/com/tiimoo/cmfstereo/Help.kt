@@ -74,7 +74,7 @@ object Help {
             HelpEntry("GUARD_CTL / GUARD_VALUE", "Apply the routing only while this control holds this value. Set to aw_dev_0_switch = Enable here, so the earpiece follows the speaker amp.", "guard"),
             HelpEntry("WATCH_INTERVAL", "How often the routing is re-asserted, in seconds. The HAL resets mixer controls on every route change, so this cannot be large. 2 is the default.", "interval poll"),
             HelpEntry("CHANNELS", "mono or stereo. Set it with the Channels switch or 'stereoctl channels' rather than by hand: stereo needs files staged, and the switch restarts the audio HAL (or waits for a reboot).", "channels stereo mono"),
-            HelpEntry("STEREO_ATTEN_DB", "In stereo, the speaker amp is held at least this many dB down (0-30, default 6) through its own volume control, aw_dev_0_volume, which counts in 1/8 dB steps. It is the margin that stands in for Awinic's protection. Read every cycle, no restart needed.", "attenuation stereo volume"),
+            HelpEntry("STEREO_ATTEN_DB", "In stereo, the speaker amp is held at least this many dB down (0-30, default 6) through its own volume control, aw_dev_0_volume, which counts in 1/8 dB steps. With the module's protection (v1.0.4+: deep bass guard, earpiece limiter, speaker boost), it is the margin that stands in for Awinic's protection; the speaker boost lowers it while the protection runs. Read every cycle, no restart needed.", "attenuation stereo volume"),
             HelpEntry("LOG_LEVEL", "debug, info or warn.", "log level"),
             HelpEntry("actions.conf syntax", "One action per line, applied in order:\n\n  ctl|<mixer control>|<value>\n  sysfs|<path>|<value>\n  prop|<property>|<value>\n\nThe original value of everything touched is saved and restored on stop.", "actions config syntax")
         ),
@@ -128,7 +128,8 @@ object Help {
             HelpEntry(
                 "Safety",
                 "In Stereo, Awinic's speaker protection is off for media: the speaker " +
-                    "relies on the amp's hardware cut-outs and the stereo attenuation. " +
+                    "relies on the amp's hardware cut-outs, the stereo attenuation and the module's " +
+                    "protection (v1.0.4+: deep bass guard, earpiece limiter). " +
                     "Use Mono for loud listening.\n\n" +
                     "The earpiece is a receiver: no protection circuit, no excursion limit, " +
                     "no thermal cutoff. Distortion, buzz or rattle means back off " +
