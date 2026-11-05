@@ -145,7 +145,7 @@ abstract class TestActivity(private val mode: String, private val withEffect: Bo
             .build()
         // VLC attaches a DynamicsProcessing effect to its own session (seen in
         // dumpsys media.audio_flinger); this does the same, left neutral.
-        val fx = if (withEffect) try {
+        val fx = if (withEffect && android.os.Build.VERSION.SDK_INT >= 28) try {
             android.media.audiofx.DynamicsProcessing(0, track.audioSessionId, null).apply { enabled = true }
         } catch (e: Throwable) { null } else null
         try {
