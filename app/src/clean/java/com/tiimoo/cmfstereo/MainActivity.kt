@@ -286,6 +286,23 @@ private fun Controls(
                 Grey
             )
         }
+        if (s.supportsLeveller) Panel {
+            Heading("EARPIECE LEVELLER", ndot)
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("off" to "OFF", "light" to "LOW", "medium" to "MID", "strong" to "HIGH").forEach { (v, l) ->
+                    Choice(l, s.earpieceLeveller == v, ndot, Modifier.weight(1f), !busy) {
+                        if (s.earpieceLeveller != v) run("LEVELLER $l") { StereoCtl.setEarpieceLeveller(v) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Body(
+                "Brings up the earpiece's quiet parts so it keeps up with the speaker. Loud " +
+                    "parts, bass and every other sound stay as they are.",
+                Grey
+            )
+        }
         Panel {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {

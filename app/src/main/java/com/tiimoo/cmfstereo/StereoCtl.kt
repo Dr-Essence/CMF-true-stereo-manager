@@ -58,6 +58,10 @@ object StereoCtl {
         /** off | light | medium | strong */
         val bassProtect: String = "medium",
         val earpieceLimit: Boolean = true,
+        /** off | light | medium | strong (module v1.0.5+). */
+        val earpieceLeveller: String = "off",
+        /** False on modules without the leveller (before v1.0.5). */
+        val supportsLeveller: Boolean = false,
         /**
          * Module v0.9.8+: "known" (the analysed Nothing OS build), "updated" (a
          * Nothing OS update changed the audio files: stereo is unavailable, mono
@@ -94,7 +98,7 @@ object StereoCtl {
             echo "@gain=${'$'}(grep '^ctl|Handset Volume|' $ACTIONS 2>/dev/null | head -n 1 | cut -d'|' -f3)"
             echo "@version=${'$'}(grep '^version=' $MODULE_DIR/module.prop 2>/dev/null | cut -d= -f2)"
             [ -f $DATA_DIR/guard_bypass ] && echo '@guard_bypass'
-            grep -E '^(WATCH_INTERVAL|LOG_LEVEL|STEREO_ATTEN_DB|SPEAKER_BOOST|BASS_PROTECT|EARPIECE_LIMIT)=' $CONF 2>/dev/null | sed 's/^/@set:/'
+            grep -E '^(WATCH_INTERVAL|LOG_LEVEL|STEREO_ATTEN_DB|SPEAKER_BOOST|BASS_PROTECT|EARPIECE_LIMIT|EARPIECE_LEVELLER)=' $CONF 2>/dev/null | sed 's/^/@set:/'
             echo "@prot=${'$'}(getprop vendor.audiohal.cmf_prot)"
             """.trimIndent()
         )
@@ -145,6 +149,8 @@ object StereoCtl {
             speakerBoost = setting("SPEAKER_BOOST").toIntOrNull()?.coerceIn(0, 6) ?: 0,
             bassProtect = setting("BASS_PROTECT").ifBlank { "medium" },
             earpieceLimit = setting("EARPIECE_LIMIT") != "off",
+            earpieceLeveller = setting("EARPIECE_LEVELLER").ifBlank { "off" },
+            supportsLeveller = help.contains("protect leveller"),
             build = Regex("""build:\s+(\w+)""").find(raw)?.groupValues?.get(1) ?: "known",
             raw = raw
         )
@@ -173,6 +179,8 @@ object StereoCtl {
     fun setBassProtect(level: String) =
         ctl("protect bass ${if (level in listOf("off", "light", "medium", "strong")) level else "medium"}").out
     fun setEarpieceLimit(on: Boolean) = ctl("protect earpiece ${if (on) "on" else "off"}").out
+    fun setEarpieceLeveller(level: String) =
+        ctl("protect leveller ${if (level in listOf("off", "light", "medium", "strong")) level else "off"}").out
 
     fun reboot() = Shell.run("svc power reboot 2>/dev/null || reboot").out
 

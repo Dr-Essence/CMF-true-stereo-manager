@@ -427,6 +427,27 @@ private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, ()
                             ) { Text(l) }
                         }
                 }
+                if (s.supportsLeveller) {
+                    Text("Earpiece leveller", style = MaterialTheme.typography.bodyMedium)
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        listOf("off" to "Off", "light" to "Light", "medium" to "Medium", "strong" to "Strong")
+                            .forEachIndexed { i, (v, l) ->
+                                SegmentedButton(
+                                    selected = s.earpieceLeveller == v,
+                                    onClick = { action("leveller") { StereoCtl.setEarpieceLeveller(v) } },
+                                    shape = SegmentedButtonDefaults.itemShape(i, 4),
+                                    enabled = !busy && s.earpieceLeveller != v
+                                ) { Text(l) }
+                            }
+                    }
+                    Text(
+                        "Raises the earpiece's quiet and medium passages towards -18 dBFS of " +
+                            "loudness by at most 4 / 8 / 12 dB (over 400 ms; down within 10 ms), " +
+                            "leaves passages below -60 dBFS alone, changes no frequency, and " +
+                            "keeps peaks at the earpiece's ceiling (-0.1 dBFS with the limiter off).",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Earpiece limiter (-2.5 dBFS)", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                     Switch(
