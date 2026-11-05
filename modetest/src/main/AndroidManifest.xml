@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:label="CMF L/R Test"
+        android:allowBackup="false"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="fullSensor">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- One process per tuning. The names are only process names inside this
+             app: com.nothing.audioeffect matches them with String.contains()
+             against its lists (checked in the order music, video, navigation,
+             game), so each lands in exactly one tuning. -->
+
+        <!-- On no list: MUSIC, Nothing's default. -->
+        <activity android:name=".MusicTest" android:exported="false"
+            android:process=":music" android:screenOrientation="sensorLandscape" />
+
+        <!-- Contains "org.videolan.vlc" (video list): MOVIE. -->
+        <activity android:name=".MovieTest" android:exported="false"
+            android:process="org.videolan.vlc.cmftest" android:screenOrientation="sensorLandscape" />
+
+        <!-- Contains "com.google.android.apps.maps" (navigation list): SPEECH. -->
+        <activity android:name=".SpeechTest" android:exported="false"
+            android:process="com.google.android.apps.maps.cmftest" android:screenOrientation="sensorLandscape" />
+
+        <!-- Contains "com.ludo.king" (game list): GAME. -->
+        <activity android:name=".GameTest" android:exported="false"
+            android:process="com.ludo.king.cmftest" android:screenOrientation="sensorLandscape" />
+    </application>
+</manifest>

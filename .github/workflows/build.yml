@@ -65,6 +65,8 @@ jobs:
             VER=$(grep -m1 versionName $DIR/output-metadata.json | cut -d'"' -f4 || echo unknown)
             cp $DIR/app-$ED-release.apk "out/CMF-true-stereo-$ED-v${VER}-${SHA}.apk"
           done
+          # The left/right test app (one beep per Dirac tuning).
+          cp modetest/build/outputs/apk/release/modetest-release.apk "out/CMF-LR-test-${SHA}.apk"
           echo "VER=$VER" >> "$GITHUB_ENV"
           ls -l out
 

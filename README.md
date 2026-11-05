@@ -42,6 +42,14 @@ Magisk / KernelSU / APatch.
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- New: **CMF L/R Test** (`modetest/`, `CMF-LR-test-*.apk` on the rolling build), a small app
+  that plays a left-only beep in each of Dirac's speaker tunings: MUSIC, MOVIE, GAME, SPEECH.
+  Nothing's audio service picks the tuning from the name of the process that plays
+  (`String.contains` against its built-in lists, music then video, navigation, game), so each
+  test runs in its own process, named to land in one tuning (`:music`, `org.videolan.vlc.cmftest`,
+  `com.google.android.apps.maps.cmftest`, `com.ludo.king.cmftest`). It shows the tuning Dirac
+  reports and the screen rotation. Built by CI only; not run on the phone yet, and whether an
+  app may read `persist.vendor.newdirac.cur.config` is not known (it then says "not readable").
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS
