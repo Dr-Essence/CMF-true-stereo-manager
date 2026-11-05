@@ -34,7 +34,7 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.56** (both editions, about 1 MB each), signed with the permanent key
+**Current release: v1.0.60** (both editions, about 1 MB each), signed with the permanent key
 (installs over v1.0.35). Works best with module v0.9.5+ (live switching, orientation swap).
 
 **Verified on the phone**
@@ -42,10 +42,10 @@ Magisk / KernelSU / APatch.
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
-- Next build: EARPIECE LEVELLER (module v1.0.5+): clean, OFF / LOW / MID / HIGH in the
+- v1.0.60: EARPIECE LEVELLER (module v1.0.5+): clean, OFF / LOW / MID / HIGH in the
   protection panels; Pro, a segmented row in the Channels card. Shown only when the module has
   `stereoctl protect leveller`. Compiled by CI; not yet seen on the phone.
-- Next build: DRIVER STUDY's Mono part finds its marker when the HAL's and DSP's files start
+- v1.0.60: DRIVER STUDY's Mono part finds its marker when the HAL's and DSP's files start
   right on it (seen on the phone: the Mono CSV came out empty and was analysed by hand);
   texts in both editions name the module's protection where they described stereo as a
   fixed attenuation only. Kotlin compiled here; not yet run on the phone.
