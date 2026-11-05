@@ -42,6 +42,10 @@ Magisk / KernelSU / APatch.
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- Next build: stereo protection settings (module v1.0.4+, `stereoctl protect`). Clean: a
+  SPEAKER BOOST row (0-6), DEEP BASS GUARD (off / light / mid / strong) and an EARPIECE
+  LIMITER switch, shown in stereo. Pro: the same in the Channels card, with whether the
+  library runs. Compiled by CI; not yet seen on the phone.
 - Pro help: PLAYBACK_CTL now explains the list of DSP task switches (module v1.0.3: games
   play through `dsp_fast`, so watching `dsp_music` alone left them on the speaker only in
   "While playing", the clean edition's only mode). Text only.

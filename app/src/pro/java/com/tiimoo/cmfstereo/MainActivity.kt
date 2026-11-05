@@ -398,6 +398,53 @@ private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, ()
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+
+            if (s.supportsProtect && s.channelsStaged == "stereo") {
+                HorizontalDivider()
+                Text("Protection", style = MaterialTheme.typography.titleSmall)
+                StatusRow("Library", if (s.protRunning) "running" else "not running yet", s.protRunning)
+                Text("Speaker boost: ${s.speakerBoost} dB", style = MaterialTheme.typography.bodyMedium)
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    (0..6).forEach { v ->
+                        SegmentedButton(
+                            selected = s.speakerBoost == v,
+                            onClick = { action("boost") { StereoCtl.setSpeakerBoost(v) } },
+                            shape = SegmentedButtonDefaults.itemShape(v, 7),
+                            enabled = !busy && s.speakerBoost != v
+                        ) { Text("$v") }
+                    }
+                }
+                Text("Deep bass guard", style = MaterialTheme.typography.bodyMedium)
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    listOf("off" to "Off", "light" to "Light", "medium" to "Medium", "strong" to "Strong")
+                        .forEachIndexed { i, (v, l) ->
+                            SegmentedButton(
+                                selected = s.bassProtect == v,
+                                onClick = { action("bass") { StereoCtl.setBassProtect(v) } },
+                                shape = SegmentedButtonDefaults.itemShape(i, 4),
+                                enabled = !busy && s.bassProtect != v
+                            ) { Text(l) }
+                        }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Earpiece limiter (-2.5 dBFS)", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    Switch(
+                        checked = s.earpieceLimit,
+                        onCheckedChange = { on -> action("earpiece limiter") { StereoCtl.setEarpieceLimit(on) } },
+                        enabled = !busy
+                    )
+                }
+                Text(
+                    "Measured with DRIVER STUDY: Awinic in mono holds the speaker's peaks about " +
+                        "5 dB below the amp's full output and cuts 100 Hz by 16 dB at any level. " +
+                        "The boost lowers the fixed attenuation by up to 6 dB, only while the " +
+                        "library runs, with a limiter that keeps the peaks at Awinic's level. " +
+                        "The bass guard holds the band below 100 Hz at -8 / -14 / -20 dB below " +
+                        "full output, only when it is louder. The earpiece clips in its top " +
+                        "1.5 dB; its limiter holds it at -2.5 dBFS.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
 

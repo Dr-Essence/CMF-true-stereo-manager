@@ -50,6 +50,14 @@ object StereoCtl {
         /** False on modules older than v0.9.0, which have no channel modes. */
         val supportsChannels: Boolean = false,
         val stereoAttenDb: String = "6",
+        /** Module v1.0.4+: the stereo protection (stereoctl protect). */
+        val supportsProtect: Boolean = false,
+        /** The protection library has marked itself running in the audio HAL. */
+        val protRunning: Boolean = false,
+        val speakerBoost: Int = 0,
+        /** off | light | medium | strong */
+        val bassProtect: String = "medium",
+        val earpieceLimit: Boolean = true,
         /**
          * Module v0.9.8+: "known" (the analysed Nothing OS build), "updated" (a
          * Nothing OS update changed the audio files: stereo is unavailable, mono
@@ -86,7 +94,8 @@ object StereoCtl {
             echo "@gain=${'$'}(grep '^ctl|Handset Volume|' $ACTIONS 2>/dev/null | head -n 1 | cut -d'|' -f3)"
             echo "@version=${'$'}(grep '^version=' $MODULE_DIR/module.prop 2>/dev/null | cut -d= -f2)"
             [ -f $DATA_DIR/guard_bypass ] && echo '@guard_bypass'
-            grep -E '^(WATCH_INTERVAL|LOG_LEVEL|STEREO_ATTEN_DB)=' $CONF 2>/dev/null | sed 's/^/@set:/'
+            grep -E '^(WATCH_INTERVAL|LOG_LEVEL|STEREO_ATTEN_DB|SPEAKER_BOOST|BASS_PROTECT|EARPIECE_LIMIT)=' $CONF 2>/dev/null | sed 's/^/@set:/'
+            echo "@prot=${'$'}(getprop vendor.audiohal.cmf_prot)"
             """.trimIndent()
         )
         val lines = r.out.lines()
@@ -131,6 +140,11 @@ object StereoCtl {
             channelsStaged = staged,
             supportsChannels = supports("channels"),
             stereoAttenDb = setting("STEREO_ATTEN_DB").ifBlank { "6" },
+            supportsProtect = supports("protect"),
+            protRunning = value("@prot=") == "1" && running == "stereo",
+            speakerBoost = setting("SPEAKER_BOOST").toIntOrNull()?.coerceIn(0, 6) ?: 0,
+            bassProtect = setting("BASS_PROTECT").ifBlank { "medium" },
+            earpieceLimit = setting("EARPIECE_LIMIT") != "off",
             build = Regex("""build:\s+(\w+)""").find(raw)?.groupValues?.get(1) ?: "known",
             raw = raw
         )
@@ -153,6 +167,12 @@ object StereoCtl {
         return if (after == v.toString()) "stereo attenuation -> $v dB (applied on the daemon's next cycle)"
         else "FAILED to write STEREO_ATTEN_DB: stereo.conf reads '${after.ifBlank { "nothing" }}'"
     }
+
+    /** Stereo protection (module v1.0.4+): applied by the daemon within one cycle. */
+    fun setSpeakerBoost(db: Int) = ctl("protect boost ${db.coerceIn(0, 6)}").out
+    fun setBassProtect(level: String) =
+        ctl("protect bass ${if (level in listOf("off", "light", "medium", "strong")) level else "medium"}").out
+    fun setEarpieceLimit(on: Boolean) = ctl("protect earpiece ${if (on) "on" else "off"}").out
 
     fun reboot() = Shell.run("svc power reboot 2>/dev/null || reboot").out
 

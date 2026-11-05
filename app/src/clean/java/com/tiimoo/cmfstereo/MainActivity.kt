@@ -256,6 +256,56 @@ private fun Controls(
         ) { lv -> run("SPEAKER $lv") { StereoCtl.setStereoAtten(Levels.attenDb(lv)) } }
     }
 
+    // ---- protection (module v1.0.4+) -----------------------------------------
+    if (s.supportsProtect && s.channels == "stereo") {
+        LevelPanel(
+            title = "SPEAKER BOOST",
+            hint = (if (s.protRunning) "" else "Starts with the next sound on the speaker. ") +
+                "Louder speaker without more strain: its loudest moments stay where the " +
+                "stock protection keeps them. 0 is the sound you had before.",
+            level = s.speakerBoost,
+            ndot = ndot,
+            enabled = !busy,
+            min = 0,
+            max = 6
+        ) { lv -> run("BOOST $lv") { StereoCtl.setSpeakerBoost(lv) } }
+        Panel {
+            Heading("DEEP BASS GUARD", ndot)
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("off" to "OFF", "light" to "LIGHT", "medium" to "MID", "strong" to "STRONG").forEach { (v, l) ->
+                    Choice(l, s.bassProtect == v, ndot, Modifier.weight(1f), !busy) {
+                        if (s.bassProtect != v) run("BASS ${l}") { StereoCtl.setBassProtect(v) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Body(
+                "Holds back only the deepest bass, and only when it gets loud enough to " +
+                    "strain the speaker. Quiet bass is untouched.",
+                Grey
+            )
+        }
+        Panel {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Heading("EARPIECE LIMITER", ndot)
+                    Body("Stops the earpiece crackling at its very loudest.", Grey)
+                }
+                Switch(
+                    checked = s.earpieceLimit,
+                    enabled = !busy,
+                    onCheckedChange = { on -> run(if (on) "LIMITER ON" else "LIMITER OFF") { StereoCtl.setEarpieceLimit(on) } },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Black, checkedTrackColor = Green,
+                        uncheckedThumbColor = Grey, uncheckedTrackColor = Deep,
+                        uncheckedBorderColor = Line
+                    )
+                )
+            }
+        }
+    }
+
     if (confirmStereo) {
         NothingDialog(
             ndot = ndot,
@@ -371,6 +421,8 @@ private fun LevelPanel(
     level: Int,
     ndot: FontFamily,
     enabled: Boolean,
+    min: Int = 1,
+    max: Int = 10,
     onSet: (Int) -> Unit
 ) = Panel {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -379,8 +431,8 @@ private fun LevelPanel(
     }
     Spacer(Modifier.height(14.dp))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        for (i in 1..10) {
-            val lit = i <= level
+        for (i in min..max) {
+            val lit = i <= level && !(i == 0 && level == 0)
             Box(
                 Modifier
                     .size(24.dp)
