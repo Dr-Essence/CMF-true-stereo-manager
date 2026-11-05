@@ -46,6 +46,9 @@ abstract class TestActivity(private val mode: String) : Activity() {
         player = Thread(::play, "beep").also { it.start() }
         startWatcher()
         ui.post(refresh)
+        // FULL CHECK: play for a set time, then go back to the main screen.
+        val auto = intent.getLongExtra("autoMs", 0L)
+        if (auto > 0) ui.postDelayed({ finish() }, auto)
     }
 
     override fun onPause() {
@@ -90,8 +93,13 @@ abstract class TestActivity(private val mode: String) : Activity() {
     private fun startWatcher() {
         Thread({
             try {
+                // During a FULL CHECK each reading is also logged with the time, so
+                // the HAL's recordings (named by time) can be matched to the mode.
+                val log = if (intent.getLongExtra("autoMs", 0L) > 0)
+                    "echo \"$(date +%T) $mode $(getprop persist.vendor.newdirac.cur.config) " +
+                        "rot=$(getprop vendor.audiohal.cmf_rotation)\" >> /sdcard/cmf-check.txt; " else ""
                 val p = ProcessBuilder("su", "-c",
-                    "while true; do echo \"$(getprop persist.vendor.newdirac.cur.config) " +
+                    "while true; do $log echo \"$(getprop persist.vendor.newdirac.cur.config) " +
                         "$(getprop vendor.audiohal.cmf_rotation)\"; sleep 1; done")
                     .redirectErrorStream(true).start()
                 watcher = p

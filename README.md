@@ -54,7 +54,12 @@ Magisk / KernelSU / APatch.
   DRIVER RECORDING switch: the audio HAL's own PCM recording (`vendor.streamout.pcm.dump`, set as
   a property and sent through `AudioManager.setParameters`, which is what makes the HAL start
   it), saved to `/sdcard/cmf-driver-dump.tgz`, to see in the data which channel a left-only
-  sound is on when it reaches the HAL.
+  sound is on when it reaches the HAL. FULL CHECK runs the four tests one after another with
+  the recording on and logs Dirac's tuning and the rotation each second
+  (`/sdcard/cmf-full-check-rot<rotation>.tgz`). First recording (MUSIC, rotation 270, module
+  v1.0.0): the beep reaches the HAL on the RIGHT channel (`hal_streamout`), the module's swap
+  puts it back on the left (`hal_playbackhandler`), and the DSP passes it on unchanged: the
+  other swap happens before the HAL, with AudioFlinger's own swap already switched off.
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS

@@ -81,6 +81,43 @@ class MainActivity : Activity() {
             }
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 64 })
         col.addView(status)
+
+        // FULL CHECK: record what the HAL receives while each of the four tests
+        // plays for 6 s, one after another, then pack the recordings with a log
+        // of the mode and rotation each second.
+        val tests = listOf(MusicTest::class.java, MovieTest::class.java, GameTest::class.java, SpeechTest::class.java)
+        col.addView(Button(this).apply {
+            text = "FULL CHECK (about 40 s, hold the phone still)"
+            textSize = 16f
+            setOnClickListener {
+                isEnabled = false
+                status.text = "Running: MUSIC, MOVIE, GAME, SPEECH... keep the phone still."
+                Thread {
+                    val am = getSystemService(AudioManager::class.java)
+                    val r = su("rm -rf /data/vendor/audiohal/audio_dump; " +
+                        "resetprop vendor.streamout.pcm.dump 1 && resetprop vendor.streamout.dsp.dump 1 && " +
+                        "echo \"start $(date +%T) rot=$(getprop vendor.audiohal.cmf_rotation)\" > /sdcard/cmf-check.txt && echo ok")
+                    am.setParameters("vendor.streamout.pcm.dump=1")
+                    if (r.contains("ok")) {
+                        for (cls in tests) {
+                            runOnUiThread { startActivity(Intent(this@MainActivity, cls).putExtra("autoMs", 6000L)) }
+                            Thread.sleep(8500)
+                        }
+                    }
+                    am.setParameters("vendor.streamout.pcm.dump=0")
+                    val out = su("resetprop vendor.streamout.pcm.dump 0; resetprop vendor.streamout.dsp.dump 0; " +
+                        "R=$(getprop vendor.audiohal.cmf_rotation); " +
+                        "cp /sdcard/cmf-check.txt /data/vendor/audiohal/audio_dump/ 2>/dev/null; " +
+                        "tar czf /sdcard/cmf-full-check-rot$R.tgz -C /data/vendor/audiohal audio_dump 2>&1; " +
+                        "ls /sdcard/cmf-full-check-rot$R.tgz")
+                    runOnUiThread {
+                        isEnabled = true
+                        status.text = if (r.contains("ok")) "Saved: $out\nTurn the phone over and run it again, then send both files."
+                            else "Root refused: $r"
+                    }
+                }.start()
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 32 })
         setContentView(ScrollView(this).apply { addView(col) })
     }
 }
