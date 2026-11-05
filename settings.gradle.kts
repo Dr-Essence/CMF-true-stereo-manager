@@ -11,6 +11,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
+        // The Xposed API (compile-only) for the Nothing Settings hook.
+        maven { url = uri("https://api.xposed.info/") }
     }
 }
 

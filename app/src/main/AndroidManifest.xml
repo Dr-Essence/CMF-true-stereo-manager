@@ -15,6 +15,55 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Long-press on the Quick Settings tile opens the app. -->
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
         </activity>
+
+        <!-- Nothing Settings > Sound: "Stereo speakers", drawn by Settings itself
+             (its EXTRA_SETTINGS tile injection), next to Dirac (order -60). The
+             LSPosed hook (nothing/SettingsHook, scope Settings) lets it in. -->
+        <activity-alias
+            android:name=".nothing.SoundSettingsEntry"
+            android:targetActivity=".MainActivity"
+            android:exported="true"
+            android:label="@string/tile_title">
+            <intent-filter>
+                <action android:name="com.android.settings.action.EXTRA_SETTINGS" />
+            </intent-filter>
+            <meta-data android:name="com.android.settings.category" android:value="com.android.settings.category.ia.sound" />
+            <meta-data android:name="com.android.settings.title" android:resource="@string/tile_title" />
+            <meta-data android:name="com.android.settings.order" android:value="-61" />
+            <meta-data android:name="com.android.settings.icon" android:resource="@drawable/ic_stereo_speakers" />
+            <meta-data android:name="com.android.settings.icon_tintable" android:value="true" />
+            <meta-data android:name="com.android.settings.keyhint" android:value="cmf_stereo" />
+            <meta-data android:name="com.android.settings.summary_uri" android:value="content://${applicationId}.settingstile" />
+            <meta-data android:name="com.android.settings.switch_uri" android:value="content://${applicationId}.settingstile" />
+            <meta-data android:name="com.android.settings.searchable" android:value="false" />
+        </activity-alias>
+        <provider
+            android:name=".nothing.SettingsTileProvider"
+            android:authorities="${applicationId}.settingstile"
+            android:exported="true" />
+
+        <!-- Quick Settings: Mono / Stereo. -->
+        <service
+            android:name=".nothing.StereoTile"
+            android:exported="true"
+            android:icon="@drawable/ic_stereo_speakers"
+            android:label="@string/qs_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE" android:value="true" />
+        </service>
+
+        <!-- LSPosed module (only for the Settings tile; the app works without it). -->
+        <meta-data android:name="xposedmodule" android:value="true" />
+        <meta-data android:name="xposeddescription" android:value="@string/xposed_description" />
+        <meta-data android:name="xposedminversion" android:value="93" />
+        <meta-data android:name="xposedscope" android:resource="@array/xposed_scope" />
     </application>
 </manifest>

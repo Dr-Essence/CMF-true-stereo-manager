@@ -42,6 +42,21 @@ Magisk / KernelSU / APatch.
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- Next build: **Stereo in Nothing's Settings and Quick Settings** (both editions).
+  - Quick Settings tile "Stereo": tap switches Mono / Stereo (shows "Switching…" while the
+    audio HAL restarts), long-press opens the app. Standard Android API, no hook.
+  - Nothing Settings > Sound > "Stereo speakers", right above Dirac (order -61): a live
+    summary (Stereo / Mono / off / after a restart) and Nothing's own switch, tap opens the
+    app. It is Settings' own tile injection (`com.android.settings.action.EXTRA_SETTINGS`,
+    category `com.android.settings.category.ia.sound`), drawn by Settings in its style;
+    Settings calls the summary and the switch on a background thread (read from Nothing
+    Settings 16.0.0). Settings only takes such tiles from system apps (TileUtils checks
+    `resolveInfo.system`), so each edition is also an LSPosed module (scope: Settings) whose
+    one hook marks its own entry as system in `queryIntentActivitiesAsUser`; nothing else
+    in Settings changes. Enable one edition in LSPosed (both would show two rows), then
+    force-stop Settings. The provider answers only Settings and the app itself.
+  - Compiled here against android-35 (the Xposed API through stand-ins with its signatures;
+    the real one comes from api.xposed.info in CI); not yet run on the phone.
 - v1.0.60: EARPIECE LEVELLER (module v1.0.5+): clean, OFF / LOW / MID / HIGH in the
   protection panels; Pro, a segmented row in the Channels card. Shown only when the module has
   `stereoctl protect leveller`. Compiled by CI; not yet seen on the phone.

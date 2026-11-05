@@ -74,7 +74,7 @@ android {
             // the release APK carried all of them (it was over 90 MB).
             isMinifyEnabled = true
             isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release")
                 ?: signingConfigs.getByName("debug")
         }
@@ -98,4 +98,6 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
+    // LSPosed / Xposed API, provided by the framework at runtime (nothing/SettingsHook).
+    compileOnly("de.robv.android.xposed:api:82")
 }

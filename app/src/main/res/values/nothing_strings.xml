@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Nothing Settings > Sound, the injected tile (sentence case, as Settings writes). -->
+    <string name="tile_title">Stereo speakers</string>
+    <string name="tile_stereo">Stereo · earpiece left, speaker right</string>
+    <string name="tile_mono">Mono · both speakers play everything</string>
+    <string name="tile_off">Earpiece speaker off</string>
+    <string name="tile_after_restart">Switches to %1$s after a restart</string>
+    <string name="tile_no_module">CMF true stereo module not installed</string>
+    <string name="tile_no_root">Needs root access for CMF Stereo</string>
+    <!-- Quick Settings tile. -->
+    <string name="qs_label">Stereo</string>
+    <string name="qs_stereo">Earpiece + speaker</string>
+    <string name="qs_mono">Mono</string>
+    <string name="qs_switching">Switching…</string>
+    <string name="qs_unavailable">Unavailable</string>
+    <string name="xposed_description">Adds Stereo speakers to Nothing Settings &gt; Sound. Scope: Settings.</string>
+</resources>
