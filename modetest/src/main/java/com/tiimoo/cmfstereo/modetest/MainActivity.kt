@@ -106,10 +106,10 @@ class MainActivity : Activity() {
                     }
                     am.setParameters("vendor.streamout.pcm.dump=0")
                     val out = su("resetprop vendor.streamout.pcm.dump 0; resetprop vendor.streamout.dsp.dump 0; " +
-                        "R=$(getprop vendor.audiohal.cmf_rotation); " +
+                        "R=\$(getprop vendor.audiohal.cmf_rotation); " +
                         "cp /sdcard/cmf-check.txt /data/vendor/audiohal/audio_dump/ 2>/dev/null; " +
-                        "tar czf /sdcard/cmf-full-check-rot$R.tgz -C /data/vendor/audiohal audio_dump 2>&1; " +
-                        "ls /sdcard/cmf-full-check-rot$R.tgz")
+                        "tar czf /sdcard/cmf-full-check-rot\$R.tgz -C /data/vendor/audiohal audio_dump 2>&1; " +
+                        "ls /sdcard/cmf-full-check-rot\$R.tgz")
                     runOnUiThread {
                         isEnabled = true
                         status.text = if (r.contains("ok")) "Saved: $out\nTurn the phone over and run it again, then send both files."
