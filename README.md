@@ -62,7 +62,18 @@ Magisk / KernelSU / APatch.
   other swap happens before the HAL, with AudioFlinger's own swap already switched off.
   MOVIE + EFFECT: the MOVIE beep with a DynamicsProcessing effect on its own session, as VLC
   has, to check whether Android's rotation swap skips such streams (VLC is the one app found
-  that it does not swap).
+  that it does not swap). Verified on the phone with module v1.0.2: MOVIE + EFFECT and VLC
+  follow the rotation.
+  New buttons, for the ways apps hand sound to Android other than a plain 16-bit AudioTrack:
+  AAUDIO (GAME, LOW LATENCY) (native AAudio, low latency and exclusive, as a game asks; the
+  phone's direct MMAP output, `mmap_no_irq_out`, lists only the earpiece and wired headsets
+  in the audio policy, so on the speaker Android is expected to use its fast mixer instead),
+  AAUDIO SHARED, FLOAT (32-bit float samples) and COMPRESSED (OFFLOAD) (an MP3 of the same
+  beep, right channel silent, decoded by the audio DSP; the policy lists MP3 and AAC offload
+  on the speaker). Each screen shows what Android granted (MMAP used or not, offloaded or
+  not) and the output thread that plays it, read from `dumpsys media.audio_flinger` as
+  root. The native player was compiled here with NDK r27c (`-Wall -Werror`); the Kotlin side
+  is compiled by CI only (Maven was rate-limited here). Not yet run on the phone.
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS

@@ -40,7 +40,12 @@ class MainActivity : Activity() {
             "MOVIE" to MovieTest::class.java,
             "MOVIE + EFFECT" to MovieEffectTest::class.java,
             "GAME" to GameTest::class.java,
-            "SPEECH" to SpeechTest::class.java
+            "SPEECH" to SpeechTest::class.java,
+            // How games, some apps and music players hand their sound to Android.
+            "AAUDIO (GAME, LOW LATENCY)" to AAudioTest::class.java,
+            "AAUDIO SHARED" to AAudioSharedTest::class.java,
+            "FLOAT" to FloatTest::class.java,
+            "COMPRESSED (OFFLOAD)" to OffloadTest::class.java
         ).forEach { (name, cls) ->
             col.addView(Button(this).apply {
                 text = name

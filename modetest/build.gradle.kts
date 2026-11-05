@@ -11,6 +11,7 @@ plugins {
 android {
     namespace = "com.tiimoo.cmfstereo.modetest"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "com.tiimoo.cmfstereo.modetest"
@@ -39,6 +40,11 @@ android {
             signingConfig = signingConfigs.findByName("release")
                 ?: signingConfigs.getByName("debug")
         }
+    }
+
+    // The AAudio player (a game's low-latency path is native code only).
+    externalNativeBuild {
+        ndkBuild { path = file("src/main/jni/Android.mk") }
     }
 
     compileOptions {

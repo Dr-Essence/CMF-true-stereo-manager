@@ -44,5 +44,18 @@
         <!-- Contains "com.ludo.king" (game list): GAME. -->
         <activity android:name=".GameTest" android:exported="false"
             android:process="com.ludo.king.cmftest" android:screenOrientation="sensorLandscape" />
+
+        <!-- The ways apps hand sound to Android, each on no Dirac list (MUSIC). -->
+        <!-- AAudio low latency + exclusive, as a game asks: Android's direct (MMAP)
+             path if it grants one, its fast mixer otherwise. -->
+        <activity android:name=".AAudioTest" android:exported="false"
+            android:process=":aaudio" android:screenOrientation="sensorLandscape" />
+        <activity android:name=".AAudioSharedTest" android:exported="false"
+            android:process=":aaudioshared" android:screenOrientation="sensorLandscape" />
+        <activity android:name=".FloatTest" android:exported="false"
+            android:process=":float" android:screenOrientation="sensorLandscape" />
+        <!-- MP3 decoded by the audio DSP (compressed offload), as music players do. -->
+        <activity android:name=".OffloadTest" android:exported="false"
+            android:process=":offload" android:screenOrientation="sensorLandscape" />
     </application>
 </manifest>
