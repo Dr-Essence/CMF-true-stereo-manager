@@ -42,6 +42,10 @@ Magisk / KernelSU / APatch.
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
+  edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
+  and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS
+  update.
 - v1.0.39: the NDot-style icon (a speaker and two waves as a dot matrix, with Nothing's red
   dot, on black) and its themed-icon layer, and its live animation with Nothing Launcher+.
   Rendered and checked here; not yet seen on the phone.

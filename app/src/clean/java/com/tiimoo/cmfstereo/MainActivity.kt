@@ -162,6 +162,20 @@ private fun Controls(
     var confirmReboot by remember { mutableStateOf(false) }
     val pending = s.supportsChannels && s.channels != s.channelsStaged
 
+    // ---- after a Nothing OS update ------------------------------------------
+    if (s.build == "updated") {
+        Panel {
+            Heading("NOTHING OS UPDATED", ndot)
+            Spacer(Modifier.height(8.dp))
+            Body(
+                "This Nothing OS version is new to the module, so Stereo is off and both " +
+                    "speakers play the stock sound. Stereo comes back with a module update " +
+                    "that supports it.",
+                Red
+            )
+        }
+    }
+
     // ---- power -------------------------------------------------------------
     Panel {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

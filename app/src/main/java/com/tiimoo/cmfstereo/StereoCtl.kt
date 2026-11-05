@@ -50,6 +50,12 @@ object StereoCtl {
         /** False on modules older than v0.9.0, which have no channel modes. */
         val supportsChannels: Boolean = false,
         val stereoAttenDb: String = "6",
+        /**
+         * Module v0.9.8+: "known" (the analysed Nothing OS build), "updated" (a
+         * Nothing OS update changed the audio files: stereo is unavailable, mono
+         * runs) or "absent" (not a CMF Phone 1 audio stack). Older modules: "known".
+         */
+        val build: String = "known",
         val raw: String = ""
     )
 
@@ -125,6 +131,7 @@ object StereoCtl {
             channelsStaged = staged,
             supportsChannels = supports("channels"),
             stereoAttenDb = setting("STEREO_ATTEN_DB").ifBlank { "6" },
+            build = Regex("""build:\s+(\w+)""").find(raw)?.groupValues?.get(1) ?: "known",
             raw = raw
         )
     }

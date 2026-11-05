@@ -218,6 +218,13 @@ private fun ControlTab(
                     s.channels == s.channelsStaged
                 )
             }
+            if (s.build != "known") {
+                StatusRow(
+                    "Nothing OS",
+                    if (s.build == "updated") "new build: stereo unavailable" else "not a CMF Phone 1",
+                    false
+                )
+            }
             StatusRow("Routing", "${s.actionCount} actions", s.actionCount > 0)
             StatusRow(
                 "Earpiece gain",
