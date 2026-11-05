@@ -26,8 +26,10 @@
         </activity>
 
         <!-- Nothing Settings > Sound: "Stereo speakers", drawn by Settings itself
-             (its EXTRA_SETTINGS tile injection), next to Dirac (order -60). The
-             LSPosed hook (nothing/SettingsHook, scope Settings) lets it in. -->
+             (its EXTRA_SETTINGS tile injection), next to Dirac (order -60), as a
+             plain row like Nothing's own (no icon, no switch); a tap opens the
+             Stereo page inside Settings. The LSPosed hook (nothing/SettingsHook,
+             scope Settings) lets it in and builds that page. -->
         <activity-alias
             android:name=".nothing.SoundSettingsEntry"
             android:targetActivity=".MainActivity"
@@ -39,11 +41,8 @@
             <meta-data android:name="com.android.settings.category" android:value="com.android.settings.category.ia.sound" />
             <meta-data android:name="com.android.settings.title" android:resource="@string/tile_title" />
             <meta-data android:name="com.android.settings.order" android:value="-61" />
-            <meta-data android:name="com.android.settings.icon" android:resource="@drawable/ic_stereo_speakers" />
-            <meta-data android:name="com.android.settings.icon_tintable" android:value="true" />
             <meta-data android:name="com.android.settings.keyhint" android:value="cmf_stereo" />
             <meta-data android:name="com.android.settings.summary_uri" android:value="content://${applicationId}.settingstile" />
-            <meta-data android:name="com.android.settings.switch_uri" android:value="content://${applicationId}.settingstile" />
             <meta-data android:name="com.android.settings.searchable" android:value="false" />
         </activity-alias>
         <provider

@@ -7,19 +7,15 @@ import android.net.Uri
 import android.os.Bundle
 import com.tiimoo.cmfstereo.R
 import com.tiimoo.cmfstereo.StereoCtl
+import com.tiimoo.cmfstereo.StereoLevels
 
 /**
- * Answers Nothing Settings for the "Stereo speakers" tile in Sound (see
- * SettingsHook): the live summary, the switch's state, and switching. Settings
- * calls these on a background thread (com.android.settings.dashboard, read
- * from Settings 16.0.0), so a switch that restarts the audio HAL for a few
- * seconds never holds up its screen. Only Settings and this app may call it.
- *
- * The protocol, as Settings uses it: call(method, uri, extras) with method
- * getDynamicSummary (answer: "com.android.settings.summary"), isChecked
- * ("checked_state") or onCheckedChanged (extras "checked_state"; answer
- * "set_checked_error" and "set_checked_error_message" when it fails, and
- * Settings turns the switch back).
+ * Answers Nothing Settings for "Stereo speakers": the tile's live summary in
+ * Sound (Settings' protocol: call("getDynamicSummary"), answered in
+ * "com.android.settings.summary", on a background thread, read from Settings
+ * 16.0.0), and the state and changes of the Stereo page inside Settings
+ * (SettingsPage: getPageState, setPage), which runs from Settings' process and
+ * has no root of its own. Only Settings and this app may call it.
  */
 class SettingsTileProvider : ContentProvider() {
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
@@ -31,26 +27,48 @@ class SettingsTileProvider : ContentProvider() {
                 "getDynamicSummary" -> Bundle().apply {
                     putString("com.android.settings.summary", summary(ctx, StereoCtl.status()))
                 }
-                "isChecked" -> Bundle().apply {
-                    putBoolean("checked_state", StereoCtl.status().channelsStaged == "stereo")
-                }
-                "onCheckedChanged" -> {
-                    val want = extras?.getBoolean("checked_state") ?: return null
-                    val out = StereoCtl.setChannels(want)
-                    val s = StereoCtl.status()
-                    ctx.contentResolver.notifyChange(Uri.parse("content://$authority/getDynamicSummary/$KEY"), null)
-                    Bundle().apply {
-                        if ((s.channelsStaged == "stereo") != want) {
-                            putBoolean("set_checked_error", true)
-                            putString("set_checked_error_message", out.lineSequence().firstOrNull()?.take(120))
-                        }
+                // The Nothing Settings page (SettingsPage): its whole state, and one change.
+                "getPageState" -> pageState(StereoCtl.status())
+                "setPage" -> {
+                    val what = extras?.getString("what") ?: return null
+                    val value = extras.getString("value") ?: return null
+                    val out = when (what) {
+                        "armed" -> StereoCtl.setArmed(value == "on")
+                        "channels" -> StereoCtl.setChannels(value == "stereo")
+                        "earLevel" -> StereoCtl.setGain(StereoLevels.handsetVolume(value.toIntOrNull() ?: 10))
+                        "spkLevel" -> StereoCtl.setStereoAtten(StereoLevels.attenDb(value.toIntOrNull() ?: 10))
+                        "boost" -> StereoCtl.setSpeakerBoost(value.toIntOrNull() ?: 0)
+                        "bass" -> StereoCtl.setBassProtect(value)
+                        "leveller" -> StereoCtl.setEarpieceLeveller(value)
+                        "limit" -> StereoCtl.setEarpieceLimit(value == "on")
+                        else -> return null
                     }
+                    ctx.contentResolver.notifyChange(Uri.parse("content://$authority/getDynamicSummary/$KEY"), null)
+                    pageState(StereoCtl.status()).apply { putString("out", out.lineSequence().firstOrNull()?.take(160)) }
                 }
                 else -> null
             }
         } catch (t: Throwable) {
             null
         }
+    }
+
+    private fun pageState(s: StereoCtl.Status) = Bundle().apply {
+        putBoolean("rooted", s.rooted)
+        putBoolean("installed", s.installed)
+        putBoolean("armed", s.armed)
+        putString("channels", s.channels)
+        putString("staged", s.channelsStaged)
+        putString("build", s.build)
+        putInt("earLevel", StereoLevels.earpieceLevel(s.gain) ?: -1)
+        putInt("spkLevel", StereoLevels.speakerLevel(s.stereoAttenDb))
+        putBoolean("supportsProtect", s.supportsProtect)
+        putBoolean("protRunning", s.protRunning)
+        putInt("boost", s.speakerBoost)
+        putString("bass", s.bassProtect)
+        putBoolean("supportsLeveller", s.supportsLeveller)
+        putString("leveller", s.earpieceLeveller)
+        putBoolean("limit", s.earpieceLimit)
     }
 
     private val authority get() = "${context?.packageName}.settingstile"

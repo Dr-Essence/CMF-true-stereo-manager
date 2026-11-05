@@ -1,5 +1,7 @@
 package com.tiimoo.cmfstereo
 
+import kotlin.math.roundToInt
+
 /**
  * Everything the UI needs from the module, expressed as shell calls.
  *
@@ -303,4 +305,22 @@ object StereoCtl {
         Shell.run("grep -m1 '^$key=' $CONF 2>/dev/null | cut -d= -f2- | tr -d \"'\"").out.trim()
 
     fun readActions(): String = Shell.run("cat $ACTIONS 2>/dev/null").out
+}
+
+/**
+ * The plain 1-10 levels the clean app and the Nothing Settings page show.
+ * Earpiece: Handset Volume 0 (+8 dB) is 10, 2 steps (2 dB) per level down.
+ * Speaker (stereo): STEREO_ATTEN_DB 6 is 10, 2 dB more per level down.
+ */
+object StereoLevels {
+    fun earpieceLevel(handsetVolume: Int?): Int? =
+        handsetVolume?.takeIf { it in 0..StereoCtl.MAX_GAIN }
+            ?.let { (10 - (it / 2.0).roundToInt()).coerceIn(1, 10) }
+
+    fun handsetVolume(level: Int): Int = ((10 - level.coerceIn(1, 10)) * 2)
+
+    fun speakerLevel(attenDb: String): Int =
+        (10 - (((attenDb.toIntOrNull() ?: 6) - 6) / 2.0).roundToInt()).coerceIn(1, 10)
+
+    fun attenDb(level: Int): Int = (10 - level.coerceIn(1, 10)) * 2 + 6
 }

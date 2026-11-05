@@ -46,9 +46,19 @@ Magisk / KernelSU / APatch.
   - Quick Settings tile "Stereo" (clean) / "Stereo Pro" (Pro; both used to say "Stereo",
     seen on the phone): tap switches Mono / Stereo (shows "Switching…" while the
     audio HAL restarts), long-press opens the app. Standard Android API, no hook.
-  - Nothing Settings > Sound > "Stereo speakers", right above Dirac (order -61): a live
-    summary (Stereo / Mono / off / after a restart) and Nothing's own switch, tap opens the
-    app. It is Settings' own tile injection (`com.android.settings.action.EXTRA_SETTINGS`,
+  - Nothing Settings > Sound > "Stereo speakers", right above Dirac (order -61): a plain row
+    like Nothing's own (no icon, no switch: seen on the phone, the switch gave the row an icon
+    and a divider line) with a live summary. A tap opens the **Stereo speakers page inside
+    Settings**: SettingsPage redirects the tile's launch to Settings' own SubSettings with a
+    small allowed Sound page (MediaControlsSettings) as carrier and, once it has built
+    itself, replaces its rows with Nothing's own widgets (NtCustSwitchPreferenceCompat,
+    NtCustDropDownPreference, PreferenceCategory): Earpiece speaker, Stereo, Earpiece and
+    Speaker level, Speaker boost, Deep bass guard, Earpiece leveller, Earpiece limiter, and a
+    row that opens the app. Settings' androidx.preference names are obfuscated; the 22 it
+    uses were read from Settings 16.0.0 and checked against its bytecode (dexdump: all
+    present, public, exact signatures), and are checked again when Settings starts: if one
+    is missing, nothing is hooked and the row opens the app. State and changes go through the
+    app's provider (`getPageState`, `setPage`), on a thread of its own. It is Settings' own tile injection (`com.android.settings.action.EXTRA_SETTINGS`,
     category `com.android.settings.category.ia.sound`), drawn by Settings in its style;
     Settings calls the summary and the switch on a background thread (read from Nothing
     Settings 16.0.0). Settings only takes such tiles from system apps (TileUtils checks

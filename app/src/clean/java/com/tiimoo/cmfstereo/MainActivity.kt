@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
 
 /**
  * CMF Stereo - the everyday edition.
@@ -57,28 +56,6 @@ private val White = Color(0xFFE9E9E9)
 private val Grey = Color(0xFF8A8A8A)
 private val Red = Color(0xFFD71921)
 
-/**
- * Plain levels for people, mapped onto what the module actually holds.
- *
- * Earpiece: Handset Volume 0 = +8 dB (loudest) ... 18 = -10 dB, so level
- * 10 = 0 and each level is 2 steps (2 dB) down.
- *
- * Speaker (stereo only): STEREO_ATTEN_DB 6 dB (the module's default margin) at
- * level 10 ... 24 dB at level 1. It never goes below 6 dB here: that margin
- * stands in for the speaker protection stereo turns off.
- */
-private object Levels {
-    fun earpieceLevel(handsetVolume: Int?): Int? =
-        handsetVolume?.takeIf { it in 0..StereoCtl.MAX_GAIN }
-            ?.let { (10 - (it / 2.0).roundToInt()).coerceIn(1, 10) }
-
-    fun handsetVolume(level: Int): Int = ((10 - level.coerceIn(1, 10)) * 2)
-
-    fun speakerLevel(attenDb: String): Int =
-        (10 - (((attenDb.toIntOrNull() ?: 6) - 6) / 2.0).roundToInt()).coerceIn(1, 10)
-
-    fun attenDb(level: Int): Int = (10 - level.coerceIn(1, 10)) * 2 + 6
-}
 
 @Composable
 private fun CleanApp() {
@@ -250,7 +227,7 @@ private fun Controls(
     }
 
     // ---- levels --------------------------------------------------------------
-    val earLevel = Levels.earpieceLevel(s.gain)
+    val earLevel = StereoLevels.earpieceLevel(s.gain)
     if (earLevel != null) {
         LevelPanel(
             title = "EARPIECE LEVEL",
@@ -258,7 +235,7 @@ private fun Controls(
             level = earLevel,
             ndot = ndot,
             enabled = !busy
-        ) { lv -> run("EARPIECE $lv") { StereoCtl.setGain(Levels.handsetVolume(lv)) } }
+        ) { lv -> run("EARPIECE $lv") { StereoCtl.setGain(StereoLevels.handsetVolume(lv)) } }
     }
 
     if (s.supportsChannels && s.channels == "stereo") {
@@ -266,10 +243,10 @@ private fun Controls(
             title = "SPEAKER LEVEL",
             hint = "Balances the two sides. Lower it until the earpiece side is as clear " +
                 "as the speaker side. Lower is also gentler on the speaker.",
-            level = Levels.speakerLevel(s.stereoAttenDb),
+            level = StereoLevels.speakerLevel(s.stereoAttenDb),
             ndot = ndot,
             enabled = !busy
-        ) { lv -> run("SPEAKER $lv") { StereoCtl.setStereoAtten(Levels.attenDb(lv)) } }
+        ) { lv -> run("SPEAKER $lv") { StereoCtl.setStereoAtten(StereoLevels.attenDb(lv)) } }
     }
 
     // ---- protection (module v1.0.4+) -----------------------------------------

@@ -22,6 +22,9 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage
  * resolveInfo.system is true). The one change: for that query, this app's own
  * entry is marked system. Nothing else in Settings is touched, and any failure
  * leaves Settings exactly as it was.
+ *
+ * A tap on the tile opens the "Stereo speakers" page inside Settings
+ * (SettingsPage), made of Nothing's own preference widgets.
  */
 class SettingsHook : IXposedHookLoadPackage {
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
@@ -47,6 +50,7 @@ class SettingsHook : IXposedHookLoadPackage {
         } catch (t: Throwable) {
             XposedBridge.log("CMF Stereo: settings hook not installed: $t")
         }
+        SettingsPage.install(lpparam.classLoader)
     }
 
     private companion object {
