@@ -42,6 +42,9 @@ Magisk / KernelSU / APatch.
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
+- Pro help: PLAYBACK_CTL now explains the list of DSP task switches (module v1.0.3: games
+  play through `dsp_fast`, so watching `dsp_music` alone left them on the speaker only in
+  "While playing", the clean edition's only mode). Text only.
 - New: **CMF L/R Test** (`modetest/`, `CMF-LR-test-*.apk` on the rolling build), a small app
   that plays a left-only beep in each of Dirac's speaker tunings: MUSIC, MOVIE, GAME, SPEECH.
   Nothing's audio service picks the tuning from the name of the process that plays

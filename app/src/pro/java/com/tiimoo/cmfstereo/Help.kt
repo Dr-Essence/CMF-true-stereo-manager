@@ -70,7 +70,7 @@ object Help {
 
         "Settings (stereo.conf)" to listOf(
             HelpEntry("MODE", "'playback' applies the routing only while audio plays - the default, and kinder to the earpiece. 'always' keeps it applied permanently.", "mode playback always"),
-            HelpEntry("PLAYBACK_CTL / PLAYBACK_VALUE", "How 'audio is playing' is detected. Empty means scan /proc/asound for a RUNNING substream, which misses DSP-offload playback entirely. On this device media IS offloaded, so it is set to dsp_music_runtime_en - without which MODE=playback never engages while MODE=always works.", "playback detect offload"),
+            HelpEntry("PLAYBACK_CTL / PLAYBACK_VALUE", "How 'audio is playing' is detected: one or more mixer controls separated by '|', any of them on means playing. Empty means scan /proc/asound for a RUNNING substream, which misses DSP playback entirely. On this phone every kind of output has its own DSP task switch (games: dsp_fast, music players: dsp_music and dsp_primary), so module v1.0.3+ watches all of them.", "playback detect offload"),
             HelpEntry("GUARD_CTL / GUARD_VALUE", "Apply the routing only while this control holds this value. Set to aw_dev_0_switch = Enable here, so the earpiece follows the speaker amp.", "guard"),
             HelpEntry("WATCH_INTERVAL", "How often the routing is re-asserted, in seconds. The HAL resets mixer controls on every route change, so this cannot be large. 2 is the default.", "interval poll"),
             HelpEntry("CHANNELS", "mono or stereo. Set it with the Channels switch or 'stereoctl channels' rather than by hand: stereo needs files staged, and the switch restarts the audio HAL (or waits for a reboot).", "channels stereo mono"),
