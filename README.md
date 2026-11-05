@@ -235,3 +235,9 @@ share it, as long as you credit Dr.Essence, do not use it commercially
 under the same licence. Releases up to v1.0.35 were published under 0BSD;
 copies obtained under it keep those terms. The clean edition draws Nothing's
 NDot font from the phone at runtime; no Nothing font ships in this app.
+
+
+## Credits
+
+- **[Dr.Essence](https://github.com/Dr-Essence)**: author and maintainer. Ideas, design decisions, and every test on a real phone (logs, recordings, measurements) that the work here rests on.
+- Code written with [Claude Code](https://claude.com/claude-code).
