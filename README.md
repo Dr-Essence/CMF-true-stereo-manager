@@ -34,7 +34,7 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.53** (both editions, about 1 MB each), signed with the permanent key
+**Current release: v1.0.56** (both editions, about 1 MB each), signed with the permanent key
 (installs over v1.0.35). Works best with module v0.9.5+ (live switching, orientation swap).
 
 **Verified on the phone**
@@ -42,7 +42,7 @@ Magisk / KernelSU / APatch.
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 
 **Not tested on a phone yet**
-- Next build: stereo protection settings (module v1.0.4+, `stereoctl protect`). Clean: a
+- v1.0.56: stereo protection settings (module v1.0.4+, `stereoctl protect`). Clean: a
   SPEAKER BOOST row (0-6), DEEP BASS GUARD (off / light / mid / strong) and an EARPIECE
   LIMITER switch, shown in stereo. Pro: the same in the Channels card, with whether the
   library runs. Compiled by CI; not yet seen on the phone.
