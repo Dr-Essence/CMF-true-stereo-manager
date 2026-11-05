@@ -50,7 +50,11 @@ Magisk / KernelSU / APatch.
   `com.google.android.apps.maps.cmftest`, `com.ludo.king.cmftest`). It shows the tuning Dirac
   reports and the screen rotation. First run on the phone: only MUSIC came out right; Dirac's
   tuning showed "not readable" (an app may not read `persist.vendor.newdirac.*`), so the
-  test now reads it, and the rotation the module stored, through one root shell.
+  test now reads it, and the rotation the module stored, through one root shell. It also has a
+  DRIVER RECORDING switch: the audio HAL's own PCM recording (`vendor.streamout.pcm.dump`, set as
+  a property and sent through `AudioManager.setParameters`, which is what makes the HAL start
+  it), saved to `/sdcard/cmf-driver-dump.tgz`, to see in the data which channel a left-only
+  sound is on when it reaches the HAL.
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS
