@@ -34,7 +34,7 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.39** (both editions, about 1 MB each), signed with the permanent key
+**Current release: v1.0.53** (both editions, about 1 MB each), signed with the permanent key
 (installs over v1.0.35). Works best with module v0.9.5+ (live switching, orientation swap).
 
 **Verified on the phone**
