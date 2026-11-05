@@ -22,6 +22,9 @@ import kotlin.math.sin
  */
 abstract class TestActivity(private val mode: String) : Activity() {
     @Volatile private var playing = false
+    @Volatile private var dirac = "asking for root..."
+    @Volatile private var halRot = "?"
+    private var watcher: java.lang.Process? = null
     private var player: Thread? = null
     private lateinit var label: TextView
     private val ui = Handler(Looper.getMainLooper())
@@ -41,6 +44,7 @@ abstract class TestActivity(private val mode: String) : Activity() {
         super.onResume()
         playing = true
         player = Thread(::play, "beep").also { it.start() }
+        startWatcher()
         ui.post(refresh)
     }
 
@@ -48,6 +52,8 @@ abstract class TestActivity(private val mode: String) : Activity() {
         playing = false
         player?.join(1000)
         player = null
+        watcher?.destroy()
+        watcher = null
         ui.removeCallbacks(refresh)
         super.onPause()
     }
@@ -68,18 +74,37 @@ abstract class TestActivity(private val mode: String) : Activity() {
                 else -> "0 (upright)"
             }
             label.text = "$mode TEST\n\nLEFT channel only\n\n" +
-                "Dirac reports: ${prop("persist.vendor.newdirac.cur.config")}\n" +
-                "Screen rotation: $rot\n\n" +
+                "Dirac reports: $dirac\n" +
+                "Screen rotation: $rot\n" +
+                "Module reads rotation: $halRot\n\n" +
                 "The beep must come from the side on your LEFT.\nBack to stop."
             ui.postDelayed(this, 1000)
         }
     }
 
-    private fun prop(key: String): String = try {
-        val p = ProcessBuilder("getprop", key).redirectErrorStream(true).start()
-        p.inputStream.bufferedReader().readText().trim().ifEmpty { "(not readable)" }
-    } catch (e: Exception) {
-        "(not readable)"
+    /**
+     * Dirac's tuning and the rotation the module stored, once a second. Apps may
+     * not read these properties, so one root shell reads them (one grant for the
+     * whole app: every test process has the same uid).
+     */
+    private fun startWatcher() {
+        Thread({
+            try {
+                val p = ProcessBuilder("su", "-c",
+                    "while true; do echo \"$(getprop persist.vendor.newdirac.cur.config) " +
+                        "$(getprop vendor.audiohal.cmf_rotation)\"; sleep 1; done")
+                    .redirectErrorStream(true).start()
+                watcher = p
+                p.inputStream.bufferedReader().forEachLine { line ->
+                    val parts = line.trim().split(" ")
+                    dirac = parts.getOrNull(0)?.ifEmpty { null } ?: "(empty)"
+                    halRot = parts.getOrNull(1) ?: "?"
+                }
+                if (dirac.startsWith("asking")) dirac = "(no root)"
+            } catch (e: Exception) {
+                dirac = "(no root)"
+            }
+        }, "props").start()
     }
 
     /** 0.3 s of 880 Hz on the left, 0.3 s of silence, over and over. */

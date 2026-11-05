@@ -48,8 +48,9 @@ Magisk / KernelSU / APatch.
   (`String.contains` against its built-in lists, music then video, navigation, game), so each
   test runs in its own process, named to land in one tuning (`:music`, `org.videolan.vlc.cmftest`,
   `com.google.android.apps.maps.cmftest`, `com.ludo.king.cmftest`). It shows the tuning Dirac
-  reports and the screen rotation. Built by CI only; not run on the phone yet, and whether an
-  app may read `persist.vendor.newdirac.cur.config` is not known (it then says "not readable").
+  reports and the screen rotation. First run on the phone: only MUSIC came out right; Dirac's
+  tuning showed "not readable" (an app may not read `persist.vendor.newdirac.*`), so the
+  test now reads it, and the rotation the module stored, through one root shell.
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS
