@@ -33,25 +33,34 @@ import kotlin.math.sqrt
 
 /**
  * DRIVER STUDY: measures how the earpiece and the speaker behave, to design
- * protection for both from data. Plays tones on the earpiece (left channel)
- * and then on the speaker (right channel), from 100 Hz to 8 kHz at seven levels
- * up to -3 dBFS, while recording
- *  - both microphones raw (AudioSource.UNPROCESSED, 48 kHz, two channels),
- *  - the audio HAL's own copy of what it received (vendor.streamout.pcm.dump:
- *    the level that really reached the drivers, after Dirac),
- *  - the HAL's own microphone capture (vendor.streamin.pcm.dump).
- * Then it measures, for every tone, the level that reached the HAL and the
- * fundamental and harmonics each microphone heard, into /sdcard/cmf-study.csv.
+ * protection for both from data. It switches the module's mode itself, after
+ * reading which one is running, and always puts that one back:
+ *
+ *  1. Stereo: tones on the earpiece (left) and then the speaker (right), 100 Hz
+ *     to 8 kHz at seven levels up to -3 dBFS, recorded by both microphones raw
+ *     (UNPROCESSED), and by the HAL itself (what reached it, after Dirac).
+ *  2. Mono (stock files, Awinic's protection on): the same kind of tones on both
+ *     channels (the stock HAL folds left and right together before Awinic), with
+ *     the audio DSP's recordings of Awinic's input, output and the amp's current
+ *     and voltage sense: what Awinic does to the speaker at each note and level.
+ *
+ * Results: /sdcard/cmf-study.csv (stereo), /sdcard/cmf-study-mono.csv,
+ * /sdcard/cmf-study-notes.txt; raw recordings in /sdcard/cmf-study-raw.tgz.
  * The screen is locked upright: at rotation 0 neither Android nor the module
  * swaps, so left is the earpiece and right the speaker throughout.
  */
 class StudyActivity : Activity() {
+    /** One tone. ch: 0 left (earpiece), 1 right (speaker), -1 both. */
     private data class Seg(val start: Int, val len: Int, val ch: Int, val f: Double, val db: Double, val name: String)
 
+    /** What one session recorded: the microphones, and the files the HAL and DSP wrote. */
+    private class Take(val mic: ShortArray, val micFrames: Int, val dumps: File)
+
     private val rate = 48000
+    private val dumpDir = "/data/vendor/audiohal/audio_dump"
     private lateinit var label: TextView
     private lateinit var go: Button
-    @Volatile private var running = false
+    @Volatile private var busy = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,11 +73,11 @@ class StudyActivity : Activity() {
         label = TextView(this).apply {
             setTextColor(Color.WHITE)
             textSize = 16f
-            text = "DRIVER STUDY\n\nStereo must be on in CMF Stereo.\n\n" +
-                "Put the phone flat on a table, screen up, in a quiet room, and do not touch it " +
-                "until it says done (about 2 minutes).\n\nIt sets media volume to maximum while it runs " +
-                "(and puts it back after): tones on the earpiece, then on the speaker, never louder " +
-                "than -3 dB below full scale."
+            text = "DRIVER STUDY\n\nPut the phone flat on a table, screen up, in a quiet room, and do not " +
+                "touch it until it says done (about 3 minutes).\n\nIt switches Stereo and Mono by itself " +
+                "(the sound stops for a moment at each switch) and puts back the mode you are in now. " +
+                "Media volume goes to maximum while it runs and back after: tones never louder than " +
+                "-3 dB below full scale."
         }
         go = Button(this).apply {
             text = "START"
@@ -83,7 +92,7 @@ class StudyActivity : Activity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (!running) Process.killProcess(Process.myPid())
+        if (!busy) Process.killProcess(Process.myPid())
     }
 
     private fun start() {
@@ -92,7 +101,7 @@ class StudyActivity : Activity() {
             return
         }
         go.isEnabled = false
-        running = true
+        busy = true
         Thread({ run() }, "study").start()
     }
 
@@ -108,16 +117,38 @@ class StudyActivity : Activity() {
         p.inputStream.bufferedReader().readText().trim().also { p.waitFor() }
     } catch (e: Exception) { "no root" }
 
-    /** The tone plan: a 1 kHz marker on the earpiece to line recordings up, then both drivers. */
-    private fun plan(): List<Seg> {
+    /** The mode the module is running now ("stereo" / "mono"), or null if it does not answer. */
+    private fun mode(): String? =
+        Regex("running: (stereo|mono)").find(su("stereoctl channels"))?.groupValues?.get(1)
+
+    /** Switches and checks that the mode really runs (not only staged for a reboot). */
+    private fun switchTo(want: String, notes: StringBuilder): Boolean {
+        if (mode() == want) return true
+        say("Switching to ${want.uppercase()}...")
+        val out = su("stereoctl channels $want")
+        notes.append("switch to $want: ${out.lineSequence().firstOrNull()}\n")
+        Thread.sleep(3000)   // the audio HAL has restarted: let Android reconnect to it
+        return mode() == want
+    }
+
+    /** Stereo: a 1 kHz marker on the left to line recordings up, then each driver. */
+    private fun stereoPlan(): List<Seg> {
         val freqs = doubleArrayOf(100.0, 150.0, 200.0, 300.0, 500.0, 800.0, 1200.0, 2000.0, 3000.0, 5000.0, 8000.0)
+        return tones(listOf(0 to "earpiece", 1 to "speaker"), freqs)
+    }
+
+    /** Mono: the same on both channels (the stock HAL folds them together anyway). */
+    private fun monoPlan(): List<Seg> =
+        tones(listOf(-1 to "mono"), doubleArrayOf(100.0, 150.0, 200.0, 300.0, 500.0, 1000.0, 3000.0))
+
+    private fun tones(drivers: List<Pair<Int, String>>, freqs: DoubleArray): List<Seg> {
         val levels = doubleArrayOf(-30.0, -24.0, -18.0, -12.0, -9.0, -6.0, -3.0)
         val on = rate * 3 / 10
         val gap = rate * 3 / 10
         val out = ArrayList<Seg>()
         var t = rate / 2
-        out.add(Seg(t, rate / 2, 0, 1000.0, -12.0, "marker")); t += rate / 2 + rate / 2
-        for ((ch, name) in listOf(0 to "earpiece", 1 to "speaker")) {
+        out.add(Seg(t, rate / 2, drivers[0].first, 1000.0, -12.0, "marker")); t += rate
+        for ((ch, name) in drivers) {
             for (f in freqs) for (db in levels) {
                 out.add(Seg(t, on, ch, f, db, name)); t += on + gap
             }
@@ -129,34 +160,96 @@ class StudyActivity : Activity() {
     private fun run() {
         val am = getSystemService(AudioManager::class.java)
         val oldVol = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val segs = plan()
-        val total = segs.last().let { it.start + it.len } + rate
-        val dir = File(cacheDir, "study").apply { deleteRecursively(); mkdirs() }
-        var rec: AudioRecord? = null
+        val work = File(cacheDir, "study").apply { deleteRecursively(); mkdirs() }
         val notes = StringBuilder()
+        val first = mode()
+        if (first == null) {
+            say("The CMF stereo module did not answer (stereoctl channels). Nothing was changed.")
+            busy = false
+            return
+        }
+        notes.append("mode at start: $first\n")
+        notes.append(su("echo rot=$(getprop vendor.audiohal.cmf_rotation) swap=$(getprop vendor.audiohal.cmf_swap) " +
+            "dirac=$(getprop persist.vendor.newdirac.cur.config)") + "\n")
+        val done = StringBuilder()
         try {
-            say("Starting the driver's own recordings...")
-            notes.append("root: " + su("rm -rf /data/vendor/audiohal/audio_dump; " +
-                "resetprop vendor.streamout.pcm.dump 1; resetprop vendor.streamin.pcm.dump 1; " +
-                "echo rot=$(getprop vendor.audiohal.cmf_rotation) swap=$(getprop vendor.audiohal.cmf_swap)") + "\n")
-            am.setParameters("vendor.streamout.pcm.dump=1")
-            am.setParameters("vendor.streamin.pcm.dump=1")
             am.setStreamVolume(AudioManager.STREAM_MUSIC, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
 
-            // Microphones: raw if the phone offers it, else the least processed source.
-            val raw = am.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED) == "true"
-            val src = if (raw) MediaRecorder.AudioSource.UNPROCESSED else MediaRecorder.AudioSource.VOICE_RECOGNITION
-            notes.append("mic source: " + (if (raw) "UNPROCESSED" else "VOICE_RECOGNITION") + "\n")
-            val minBuf = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT)
-            @Suppress("MissingPermission")
-            val r = AudioRecord(src, rate, AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, max(minBuf, rate))
-            rec = r
-            val mic = ShortArray((total + rate * 2) * 2)
-            var micN = 0
+            if (switchTo("stereo", notes)) {
+                val segs = stereoPlan()
+                val take = session("stereo", segs, false, am, work, notes)
+                say("Measuring the stereo part...")
+                File(work, "study.csv").writeText(analyseStereo(segs, take, notes))
+                done.append("/sdcard/cmf-study.csv\n")
+            } else notes.append("stereo did not start: stereo part skipped\n")
+
+            if (switchTo("mono", notes)) {
+                val segs = monoPlan()
+                val take = session("mono", segs, true, am, work, notes)
+                say("Measuring the mono part...")
+                File(work, "study-mono.csv").writeText(analyseMono(segs, take, notes))
+                done.append("/sdcard/cmf-study-mono.csv\n")
+            } else notes.append("mono did not start: mono part skipped\n")
+        } catch (e: Throwable) {
+            notes.append("stopped: $e\n")
+        } finally {
+            try { am.setStreamVolume(AudioManager.STREAM_MUSIC, oldVol, 0) } catch (_: Throwable) {}
+            dumpsOff(am)
+            // Whatever happened, back to the mode the phone was in.
+            val back = switchTo(first, notes)
+            notes.append("mode at end: ${mode()} (wanted $first${if (back) "" else ", NOT restored"})\n")
+            File(work, "notes.txt").writeText(notes.toString())
+            val out = su("cd '${work.path}' && { [ -f study.csv ] && cp study.csv /sdcard/cmf-study.csv; " +
+                "[ -f study-mono.csv ] && cp study-mono.csv /sdcard/cmf-study-mono.csv; " +
+                "cp notes.txt /sdcard/cmf-study-notes.txt; " +
+                "tar czf /sdcard/cmf-study-raw.tgz . 2>&1; ls -la /sdcard/cmf-study*; }")
+            busy = false
+            say("Done. Mode is ${mode()} again.\n\nSend these (small):\n$done/sdcard/cmf-study-notes.txt\n\n" +
+                "Keep /sdcard/cmf-study-raw.tgz in case it is needed.\n\n$out")
+        }
+    }
+
+    private fun dumpsOff(am: AudioManager) {
+        try {
+            am.setParameters("vendor.streamout.pcm.dump=0")
+            am.setParameters("vendor.streamin.pcm.dump=0")
+        } catch (_: Throwable) {}
+        su("resetprop vendor.streamout.pcm.dump 0; resetprop vendor.streamin.pcm.dump 0; " +
+            "resetprop vendor.streamout.dsp.dump 0")
+    }
+
+    /** Plays one plan while the microphones and the HAL (and the DSP, if asked) record. */
+    private fun session(tag: String, segs: List<Seg>, dsp: Boolean, am: AudioManager, work: File, notes: StringBuilder): Take {
+        val total = segs.last().let { it.start + it.len } + rate
+        say("Starting the recordings ($tag)...")
+        su("rm -rf $dumpDir; resetprop vendor.streamout.pcm.dump 1; resetprop vendor.streamin.pcm.dump 1; " +
+            "resetprop vendor.streamout.dsp.dump ${if (dsp) 1 else 0}")
+        am.setParameters("vendor.streamout.pcm.dump=1")
+        am.setParameters("vendor.streamin.pcm.dump=1")
+
+        val raw = am.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED) == "true"
+        val src = if (raw) MediaRecorder.AudioSource.UNPROCESSED else MediaRecorder.AudioSource.VOICE_RECOGNITION
+        notes.append("$tag mic source: ${if (raw) "UNPROCESSED" else "VOICE_RECOGNITION"}\n")
+        val minBuf = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT)
+        @Suppress("MissingPermission")
+        val r = AudioRecord(src, rate, AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, max(minBuf, rate))
+        val mic = ShortArray((total + rate * 2) * 2)
+        var micN = 0
+        val recording = java.util.concurrent.atomic.AtomicBoolean(true)
+        val track = AudioTrack.Builder()
+            .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
+            .setAudioFormat(AudioFormat.Builder().setSampleRate(rate)
+                .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO).build())
+            .setBufferSizeInBytes(rate * 8 / 5)
+            .setTransferMode(AudioTrack.MODE_STREAM)
+            .build()
+        try {
             r.startRecording()
             val reader = Thread {
                 val b = ShortArray(4800)
-                while (running) {
+                while (recording.get()) {
                     val n = r.read(b, 0, b.size)
                     if (n <= 0) continue
                     val k = min(n, mic.size - micN)
@@ -164,17 +257,6 @@ class StudyActivity : Activity() {
                 }
             }.also { it.start() }
             Thread.sleep(1000)
-
-            // Playback: generated on the fly, float, left = earpiece, right = speaker.
-            val track = AudioTrack.Builder()
-                .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
-                .setAudioFormat(AudioFormat.Builder().setSampleRate(rate)
-                    .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                    .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO).build())
-                .setBufferSizeInBytes(rate * 8 / 5)
-                .setTransferMode(AudioTrack.MODE_STREAM)
-                .build()
             track.play()
             val chunk = FloatArray(2400 * 2)
             var pos = 0
@@ -193,7 +275,9 @@ class StudyActivity : Activity() {
                             val a = Math.pow(10.0, s.db / 20)
                             val w = if (k < fade) 0.5 - 0.5 * cos(PI * k / fade)
                                 else if (k > s.len - fade) 0.5 - 0.5 * cos(PI * (s.len - k) / fade) else 1.0
-                            chunk[i * 2 + s.ch] = (a * w * sin(2 * PI * s.f * k / rate)).toFloat()
+                            val v = (a * w * sin(2 * PI * s.f * k / rate)).toFloat()
+                            if (s.ch != 1) chunk[i * 2] = v
+                            if (s.ch != 0) chunk[i * 2 + 1] = v
                         }
                     }
                 }
@@ -201,54 +285,33 @@ class StudyActivity : Activity() {
                 pos += n
                 if (pos % (rate * 2) < 2400) {
                     val s = segs.getOrNull(si)
-                    say("Playing, do not touch the phone.\n\n${s?.name ?: ""} ${s?.f?.toInt() ?: ""} Hz, " +
-                        "${s?.db?.toInt() ?: ""} dB\n\n${100 * pos / total}%")
+                    say("${tag.uppercase()}: playing, do not touch the phone.\n\n${s?.name ?: ""} " +
+                        "${s?.f?.toInt() ?: ""} Hz, ${s?.db?.toInt() ?: ""} dB\n\n${100 * pos / total}%")
                 }
             }
             Thread.sleep(800)
-            track.stop(); track.release()
-            running = false
+            track.stop()
+            recording.set(false)
             reader.join(2000)
             r.stop()
-
-            am.setParameters("vendor.streamout.pcm.dump=0")
-            am.setParameters("vendor.streamin.pcm.dump=0")
-            su("resetprop vendor.streamout.pcm.dump 0; resetprop vendor.streamin.pcm.dump 0")
-            am.setStreamVolume(AudioManager.STREAM_MUSIC, oldVol, 0)
-
-            say("Measuring...")
-            writeWav(File(dir, "mic.wav"), mic, micN, 2)
-            // The HAL's copy of the playback: the largest hal_streamout file of this run.
-            val halSrc = su("ls -S /data/vendor/audiohal/audio_dump/hal_streamout_* 2>/dev/null | head -n 1")
-            val hal = File(dir, "hal.wav")
-            if (halSrc.startsWith("/")) su("cp '$halSrc' '${hal.path}' && chmod 644 '${hal.path}'")
-            notes.append("hal file: $halSrc\n")
-            val halCh = if (hal.length() > 44) readWav32(hal) else null
-            notes.append("hal frames: ${halCh?.get(0)?.size ?: 0}, mic frames: ${micN / 2}\n")
-            val csv = analyse(segs, mic, micN / 2, halCh, notes)
-            File(dir, "study.csv").writeText(csv)
-            File(dir, "notes.txt").writeText(notes.toString())
-            File(dir, "plan.txt").writeText(segs.joinToString("\n") { "${it.start},${it.len},${it.name},${it.f},${it.db}" })
-
-            val out = su("cp '${dir.path}/study.csv' /sdcard/cmf-study.csv; cp '${dir.path}/notes.txt' /sdcard/cmf-study-notes.txt; " +
-                "cp '${dir.path}'/mic.wav '${dir.path}'/plan.txt /data/vendor/audiohal/audio_dump/ 2>/dev/null; " +
-                "tar czf /sdcard/cmf-study-raw.tgz -C /data/vendor/audiohal audio_dump 2>&1; " +
-                "ls -la /sdcard/cmf-study.csv /sdcard/cmf-study-raw.tgz")
-            say("Done.\n\nSend /sdcard/cmf-study.csv and /sdcard/cmf-study-notes.txt " +
-                "(small). Keep /sdcard/cmf-study-raw.tgz in case it is needed.\n\n$out")
-        } catch (e: Throwable) {
-            say("Stopped: $e")
         } finally {
-            running = false
-            try { rec?.release() } catch (_: Throwable) {}
-            try {
-                am.setParameters("vendor.streamout.pcm.dump=0")
-                am.setParameters("vendor.streamin.pcm.dump=0")
-                am.setStreamVolume(AudioManager.STREAM_MUSIC, oldVol, 0)
-            } catch (_: Throwable) {}
-            su("resetprop vendor.streamout.pcm.dump 0; resetprop vendor.streamin.pcm.dump 0")
+            recording.set(false)
+            track.release()
+            r.release()
+            dumpsOff(am)
         }
+        // Keep this session's HAL and DSP files with the microphone recording.
+        val dir = File(work, tag).apply { mkdirs() }
+        su("cp -r $dumpDir/. '${dir.path}/' 2>/dev/null; chmod -R a+rX '${dir.path}'")
+        writeWav(File(dir, "mic.wav"), mic, micN, 2)
+        File(dir, "plan.txt").writeText(segs.joinToString("\n") { "${it.start},${it.len},${it.name},${it.f},${it.db}" })
+        notes.append("$tag files: ${dir.list()?.sorted()?.joinToString(" ")}\n")
+        return Take(mic, micN / 2, dir)
     }
+
+    /** The largest file of this session whose name starts with [prefix] and ends with [suffix]. */
+    private fun largest(dir: File, prefix: String, suffix: String): File? =
+        dir.listFiles()?.filter { it.name.startsWith(prefix) && it.name.endsWith(suffix) }?.maxByOrNull { it.length() }
 
     /** Amplitude (relative to full scale) of frequency f in x[from, from+n), Hann window. */
     private fun tone(x: (Int) -> Double, from: Int, n: Int, f: Double): Double {
@@ -263,6 +326,7 @@ class StudyActivity : Activity() {
     }
 
     private fun db(a: Double) = if (a <= 1e-12) -240.0 else 20 * log10(a)
+    private fun f1(v: Double) = "%.1f".format(v)
 
     /** First block where 1 kHz stands 20 dB above the level before it: the marker's start. */
     private fun onset(x: (Int) -> Double, frames: Int): Int {
@@ -273,44 +337,96 @@ class StudyActivity : Activity() {
         return -1
     }
 
-    private fun analyse(segs: List<Seg>, mic: ShortArray, micFrames: Int, hal: Array<FloatArray>?, notes: StringBuilder): String {
-        val m0: (Int) -> Double = { i -> if (i in 0 until micFrames) mic[i * 2] / 32768.0 else 0.0 }
-        val m1: (Int) -> Double = { i -> if (i in 0 until micFrames) mic[i * 2 + 1] / 32768.0 else 0.0 }
+    private fun channel(a: FloatArray?, scale: Double = 1.0): (Int) -> Double =
+        { i -> if (a != null && i in a.indices) a[i] * scale else 0.0 }
+
+    /** Where the plan's time 0 sits in a recording, found on its marker. */
+    private fun offset(x: (Int) -> Double, frames: Int, marker: Int, what: String, notes: StringBuilder): Int? {
+        val o = onset(x, frames)
+        notes.append("$what marker onset $o\n")
+        return if (o >= 0) o - marker else null
+    }
+
+    private val win get() = rate * 15 / 100   // 150 ms, from 100 ms into each 300 ms tone
+
+    /** Fundamental, harmonics 2-5, distortion (%) and peak of one microphone over one tone. */
+    private fun micCols(x: (Int) -> Double, at: Int, f: Double): String {
+        val fund = tone(x, at, win, f)
+        val hs = (2..5).map { k -> if (f * k < rate / 2 - 1000) tone(x, at, win, f * k) else 0.0 }
+        val thd = 100 * sqrt(hs.sumOf { it * it }) / max(fund, 1e-12)
+        var pk = 0.0
+        for (i in at until at + win) pk = max(pk, kotlin.math.abs(x(i)))
+        return "${f1(db(fund))},${hs.joinToString(",") { f1(db(it)) }},${"%.2f".format(thd)},${f1(db(pk))}"
+    }
+
+    private fun micChannels(t: Take): List<(Int) -> Double> = listOf(
+        { i: Int -> if (i in 0 until t.micFrames) t.mic[i * 2] / 32768.0 else 0.0 },
+        { i: Int -> if (i in 0 until t.micFrames) t.mic[i * 2 + 1] / 32768.0 else 0.0 })
+
+    private fun micOffset(t: Take, marker: Int, notes: StringBuilder): Int? {
+        val m = micChannels(t)
+        return listOf(offset(m[0], t.micFrames, marker, "mic0", notes), offset(m[1], t.micFrames, marker, "mic1", notes))
+            .filterNotNull().minOrNull()
+    }
+
+    private fun analyseStereo(segs: List<Seg>, t: Take, notes: StringBuilder): String {
         val marker = segs[0].start
-        // Line the microphones up on the marker (whichever mic hears it better).
-        val o0 = onset(m0, micFrames); val o1 = onset(m1, micFrames)
-        val micOff = listOf(o0, o1).filter { it >= 0 }.minOrNull()?.minus(marker)
-        notes.append("mic marker onsets: $o0 $o1 -> offset ${micOff ?: "not found"}\n")
-        var halOff: Int? = null
-        var h0: (Int) -> Double = { 0.0 }; var h1: (Int) -> Double = { 0.0 }
-        if (hal != null) {
-            val hl = hal[0]; val hr = hal[1]
-            h0 = { i -> if (i in hl.indices) hl[i].toDouble() else 0.0 }
-            h1 = { i -> if (i in hr.indices) hr[i].toDouble() else 0.0 }
-            val o = onset(h0, hl.size)
-            halOff = if (o >= 0) o - marker else null
-            notes.append("hal marker onset: $o -> offset ${halOff ?: "not found"}\n")
-        }
+        val m = micChannels(t)
+        val mo = micOffset(t, marker, notes)
+        val hal = largest(t.dumps, "hal_streamout", ".wav")?.let { readPcm(it, true) }
+        notes.append("stereo hal file: ${largest(t.dumps, "hal_streamout", ".wav")?.name}\n")
+        val hl = channel(hal?.get(0)); val hr = channel(hal?.get(1))
+        val ho = if (hal != null) offset(hl, hal[0].size, marker, "stereo hal", notes) else null
         val sb = StringBuilder("driver,freq,level_dbfs,hal_l_db,hal_r_db,mic,fund_db,h2_db,h3_db,h4_db,h5_db,thd_pct,peak_db\n")
-        val win = rate * 15 / 100       // 150 ms from 100 ms into each 300 ms tone
         for (s in segs.drop(1)) {
-            var halL = Double.NaN; var halR = Double.NaN
-            if (halOff != null) {
-                val a = s.start + halOff + rate / 10
-                halL = db(tone(h0, a, win, s.f)); halR = db(tone(h1, a, win, s.f))
+            val ha = if (ho != null) s.start + ho + rate / 10 else -1
+            val hcols = if (ho != null) "${f1(db(tone(hl, ha, win, s.f)))},${f1(db(tone(hr, ha, win, s.f)))}" else ","
+            for (mi in 0..1) {
+                val mcols = if (mo != null) micCols(m[mi], s.start + mo + rate / 10, s.f) else ",,,,,,"
+                sb.append("${s.name},${s.f.toInt()},${s.db},$hcols,$mi,$mcols\n")
             }
-            for ((mi, mx) in listOf(0 to m0, 1 to m1)) {
-                if (micOff == null) { sb.append("${s.name},${s.f.toInt()},${s.db},$halL,$halR,$mi,,,,,,,\n"); continue }
-                val a = s.start + micOff + rate / 10
-                val fund = tone(mx, a, win, s.f)
-                val hs = (2..5).map { k -> if (s.f * k < rate / 2 - 1000) tone(mx, a, win, s.f * k) else 0.0 }
-                val thd = 100 * sqrt(hs.sumOf { it * it }) / max(fund, 1e-12)
-                var pk = 0.0
-                for (i in a until a + win) pk = max(pk, kotlin.math.abs(mx(i)))
-                sb.append("${s.name},${s.f.toInt()},${s.db},${"%.1f".format(halL)},${"%.1f".format(halR)},$mi," +
-                    "${"%.1f".format(db(fund))},${hs.joinToString(",") { "%.1f".format(db(it)) }}," +
-                    "${"%.2f".format(thd)},${"%.1f".format(db(pk))}\n")
+        }
+        return sb.toString()
+    }
+
+    /**
+     * Mono: Awinic's input and output on the audio DSP (8.24 fixed point in a
+     * 32-bit word, hence x256) and the amp's current/voltage sense, per tone.
+     */
+    private fun analyseMono(segs: List<Seg>, t: Take, notes: StringBuilder): String {
+        val marker = segs[0].start
+        val m = micChannels(t)
+        val mo = micOffset(t, marker, notes)
+        val hal = largest(t.dumps, "hal_streamout", ".wav")?.let { readPcm(it, true) }
+        val inF = t.dumps.listFiles()
+            ?.filter { it.name.startsWith("adsp_Playback_") && it.name.contains("_in_") && it.name.endsWith(".pcm") }
+            ?.maxByOrNull { it.length() }
+        val outF = inF?.let { File(it.parentFile, it.name.replace("_in_", "_out_")) }?.takeIf { it.exists() }
+        val ivF = inF?.let { File(it.parentFile, it.name.replace("_in_", "_ivdump_")) }?.takeIf { it.exists() }
+        notes.append("mono files: hal ${largest(t.dumps, "hal_streamout", ".wav")?.name}, dsp in ${inF?.name}, " +
+            "out ${outF?.name}, iv ${ivF?.name}\n")
+        val dIn = inF?.let { readPcm(it, false) }
+        val dOut = outF?.let { readPcm(it, false) }
+        val dIv = ivF?.let { readPcm(it, false) }
+        val hl = channel(hal?.get(0)); val hr = channel(hal?.get(1))
+        val il = channel(dIn?.get(0), 256.0); val ir = channel(dIn?.get(1), 256.0)
+        val ol = channel(dOut?.get(0), 256.0); val or = channel(dOut?.get(1), 256.0)
+        val v0 = channel(dIv?.get(0)); val v1 = channel(dIv?.get(1))
+        val ho = if (hal != null) offset(hl, hal[0].size, marker, "mono hal", notes) else null
+        val io = if (dIn != null) offset(il, dIn[0].size, marker, "dsp in", notes) else null
+        val oo = if (dOut != null) offset(ol, dOut[0].size, marker, "dsp out", notes) ?: io else io
+        val sb = StringBuilder("driver,freq,level_dbfs,hal_l_db,hal_r_db,dsp_in_l_db,dsp_in_r_db,dsp_out_l_db,dsp_out_r_db," +
+            "iv0_db,iv1_db,mic0_fund_db,mic0_thd_pct,mic1_fund_db,mic1_thd_pct\n")
+        fun lv(x: (Int) -> Double, off: Int?, s: Seg) = if (off == null) "" else f1(db(tone(x, s.start + off + rate / 10, win, s.f)))
+        for (s in segs.drop(1)) {
+            val mc = (0..1).joinToString(",") { mi ->
+                if (mo == null) "," else {
+                    val c = micCols(m[mi], s.start + mo + rate / 10, s.f).split(",")
+                    "${c[0]},${c[5]}"
+                }
             }
+            sb.append("${s.name},${s.f.toInt()},${s.db},${lv(hl, ho, s)},${lv(hr, ho, s)},${lv(il, io, s)},${lv(ir, io, s)}," +
+                "${lv(ol, oo, s)},${lv(or, oo, s)},${lv(v0, oo, s)},${lv(v1, oo, s)},$mc\n")
         }
         return sb.toString()
     }
@@ -327,19 +443,26 @@ class StudyActivity : Activity() {
         }
     }
 
-    /** The HAL's recording: 2-channel 32- or 16-bit integer WAV (as the HAL writes it), read in chunks. */
-    private fun readWav32(f: File): Array<FloatArray>? {
+    /**
+     * Two channels of a HAL recording (WAV, 32- or 16-bit integer) or of a DSP
+     * recording (raw 32-bit, no header), read in chunks.
+     */
+    private fun readPcm(f: File, wav: Boolean): Array<FloatArray>? {
         RandomAccessFile(f, "r").use { raf ->
-            val head = ByteArray(min(4096L, raf.length()).toInt()); raf.readFully(head)
-            val bb = ByteBuffer.wrap(head).order(ByteOrder.LITTLE_ENDIAN)
-            var p = 12; var ch = 2; var bits = 32; var dataAt = -1; var dataLen = 0L
-            while (p + 8 <= head.size) {
-                val id = String(head, p, 4); val sz = bb.getInt(p + 4).toLong() and 0xffffffffL
-                if (id == "fmt ") { ch = bb.getShort(p + 10).toInt(); bits = bb.getShort(p + 22).toInt() }
-                if (id == "data") { dataAt = p + 8; dataLen = sz; break }
-                p += 8 + sz.toInt()
+            var ch = 2; var bits = 32; var dataAt = 0L; var dataLen = raf.length()
+            if (wav) {
+                val head = ByteArray(min(4096L, raf.length()).toInt()); raf.readFully(head)
+                val bb = ByteBuffer.wrap(head).order(ByteOrder.LITTLE_ENDIAN)
+                var p = 12; var found = false
+                while (p + 8 <= head.size) {
+                    val id = String(head, p, 4); val sz = bb.getInt(p + 4).toLong() and 0xffffffffL
+                    if (id == "fmt ") { ch = bb.getShort(p + 10).toInt(); bits = bb.getShort(p + 22).toInt() }
+                    if (id == "data") { dataAt = (p + 8).toLong(); dataLen = sz; found = true; break }
+                    p += 8 + sz.toInt()
+                }
+                if (!found) return null
             }
-            if (dataAt < 0 || ch < 2 || (bits != 32 && bits != 16)) return null
+            if (ch < 2 || (bits != 32 && bits != 16)) return null
             val bps = bits / 8
             val fsz = bps * ch
             // The HAL may not fill in the size of a file it is still writing: use what is there.
@@ -347,7 +470,7 @@ class StudyActivity : Activity() {
             val frames = (len / fsz).toInt()
             val l = FloatArray(frames); val r = FloatArray(frames)
             val buf = ByteArray(fsz * 8192)
-            raf.seek(dataAt.toLong())
+            raf.seek(dataAt)
             var i = 0
             while (i < frames) {
                 val n = min(8192, frames - i)

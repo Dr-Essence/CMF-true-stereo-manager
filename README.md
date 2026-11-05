@@ -78,16 +78,23 @@ Magisk / KernelSU / APatch.
   shows "this phone refuses MP3 offload" and plays nothing (Android's offload check said no,
   so the test stops there).
   New: DRIVER STUDY, to design protection for the earpiece and the speaker from measurements.
-  Upright (rotation 0: no swap, left = earpiece, right = speaker), media volume at maximum for
-  the run, it plays 300 ms tones on the earpiece and then the speaker (11 frequencies,
-  100 Hz-8 kHz, at -30 to -3 dBFS, never above -3), records both microphones raw
-  (`UNPROCESSED`, 48 kHz, 2 channels) and turns on the HAL's own playback and microphone
-  recordings. It then measures each tone: the level that reached the HAL on each channel
-  (after Dirac), and the fundamental, harmonics 2-5 and distortion each microphone heard,
-  into `/sdcard/cmf-study.csv` (raw files in `/sdcard/cmf-study-raw.tgz`). The measurement
-  is checked here with `modetest/study_sim.py` (the same steps on a simulated driver: levels
-  read exactly, simulated clipping found, recordings aligned within 10 ms). Compiled by CI;
-  not yet run on the phone.
+  It reads the running mode first (`stereoctl channels`; it stops without changing anything if
+  the module does not answer), switches modes itself, checks after each switch that the mode
+  really runs (not only staged for a reboot), and always switches back to the mode it found.
+  Upright (rotation 0: no swap), media volume at maximum for the run and restored after:
+  1. Stereo: 300 ms tones on the earpiece, then the speaker (11 frequencies, 100 Hz-8 kHz,
+     -30 to -3 dBFS, never above -3), with both microphones raw (`UNPROCESSED`, 48 kHz,
+     2 channels) and the HAL's own playback and microphone recordings. Per tone: the level
+     that reached the HAL on each channel (after Dirac), and each microphone's fundamental,
+     harmonics 2-5 and distortion: `/sdcard/cmf-study.csv`.
+  2. Mono (stock files, Awinic on): tones on both channels (7 frequencies), with the audio
+     DSP's recordings of Awinic's input, output and the amp's current/voltage sense, per tone:
+     `/sdcard/cmf-study-mono.csv`. (The stock HAL folds left and right before Awinic, so this
+     shows what Awinic does to the speaker, not whether it keeps the channels apart.)
+  Notes in `/sdcard/cmf-study-notes.txt`, raw files in `/sdcard/cmf-study-raw.tgz`. The
+  measurement is checked with `modetest/study_sim.py` (the same steps on a simulated driver:
+  levels read exactly, simulated clipping found, recordings aligned within 10 ms); the Kotlin
+  compiles against android-35 here and in CI. Not yet run on the phone.
 - Next build: after a Nothing OS update (module v0.9.8+ reports `build: updated`), the clean
   edition shows a NOTHING OS UPDATED panel (stereo off, stock sound until a module update)
   and Pro a "Nothing OS" status row. Compiled by CI; seen only after the next Nothing OS
