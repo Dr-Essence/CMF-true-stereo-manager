@@ -182,6 +182,19 @@ object StereoCtl {
     fun setEarpieceLeveller(level: String) =
         ctl("protect leveller ${if (level in listOf("off", "light", "medium", "strong")) level else "off"}").out
 
+    /**
+     * True when this app sits on adopted storage (/mnt/expand/...): LSPosed
+     * starts before that is mounted and never loads the Settings tile's hook.
+     * android:installLocation="internalOnly" keeps it off, unless the developer
+     * option "Force allow apps on external" overrides it.
+     */
+    fun onExternalStorage(ctx: android.content.Context): Boolean =
+        ctx.applicationInfo.sourceDir?.startsWith("/mnt/expand/") == true
+
+    /** Moves this app to internal storage (root; the app restarts). */
+    fun moveToInternal(ctx: android.content.Context) =
+        Shell.run("pm move-package ${ctx.packageName} internal").out
+
     fun reboot() = Shell.run("svc power reboot 2>/dev/null || reboot").out
 
     fun solo(on: Boolean) = ctl(if (on) "solo" else "unsolo").out

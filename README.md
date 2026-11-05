@@ -56,6 +56,11 @@ Magisk / KernelSU / APatch.
     one hook marks its own entry as system in `queryIntentActivitiesAsUser`; nothing else
     in Settings changes. Enable one edition in LSPosed (both would show two rows), then
     force-stop Settings. The provider answers only Settings and the app itself.
+  - Seen on the phone: both editions installed on adopted storage (`/mnt/expand/...`) never
+    appear in LSPosed ("Failed to find package info" at boot: LSPosed starts before that
+    storage is mounted). Both apps are now `installLocation="internalOnly"`, and if they still
+    land there (the developer option "Force allow apps on external" overrides it) they show a
+    MOVE TO INTERNAL STORAGE panel that runs `pm move-package <app> internal`.
   - Compiled here against android-35 (the Xposed API through stand-ins with its signatures;
     the real one comes from api.xposed.info in CI); not yet run on the phone.
 - v1.0.60: EARPIECE LEVELLER (module v1.0.5+): clean, OFF / LOW / MID / HIGH in the

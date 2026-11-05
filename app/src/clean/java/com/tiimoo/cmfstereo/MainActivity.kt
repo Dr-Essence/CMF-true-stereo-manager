@@ -162,6 +162,22 @@ private fun Controls(
     var confirmReboot by remember { mutableStateOf(false) }
     val pending = s.supportsChannels && s.channels != s.channelsStaged
 
+    // ---- on adopted storage: LSPosed cannot load the Settings tile ------------
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    if (StereoCtl.onExternalStorage(ctx)) {
+        Panel {
+            Heading("MOVE TO INTERNAL STORAGE", ndot)
+            Spacer(Modifier.height(8.dp))
+            Body(
+                "CMF Stereo is on the SD card. Its Settings entry (through LSPosed) only " +
+                    "works from internal storage.",
+                Red
+            )
+            Spacer(Modifier.height(8.dp))
+            Pill("MOVE", ndot, enabled = !busy) { run("MOVED") { StereoCtl.moveToInternal(ctx) } }
+        }
+    }
+
     // ---- after a Nothing OS update ------------------------------------------
     if (s.build == "updated") {
         Panel {

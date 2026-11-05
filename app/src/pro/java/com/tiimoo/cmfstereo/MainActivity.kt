@@ -202,6 +202,26 @@ private fun ControlTab(
     action: (String, () -> String) -> Unit
 ) {
     val max = StereoCtl.MAX_GAIN
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+
+    if (StereoCtl.onExternalStorage(ctx)) {
+        Card {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("On adopted storage", style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.error)
+                Text(
+                    "Installed under /mnt/expand: LSPosed starts before that storage is mounted " +
+                        "and never loads the Settings tile's hook (\"Failed to find package info\"). " +
+                        "Move it to internal storage, then reboot.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Button(onClick = { action("move to internal") { StereoCtl.moveToInternal(ctx) } }, enabled = !busy) {
+                    Text("Move to internal storage")
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+    }
 
     Card {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
