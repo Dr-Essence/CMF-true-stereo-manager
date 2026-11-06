@@ -3,12 +3,18 @@ package com.tiimoo.cmfstereo.nothing
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
+import android.graphics.Rect
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
+import android.widget.PopupWindow
+import android.widget.Spinner
+import android.widget.TextView
 import com.tiimoo.cmfstereo.BuildConfig
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
@@ -117,6 +123,79 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
                 try { build(f, act) } catch (t: Throwable) { log(t) }
             }
         })
+        // 3. This page's dropdowns open as a card in line with their row.
+        XposedHelpers.findAndHookMethod(Spinner::class.java, "performClick", object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                try { placePopup(param.thisObject as Spinner) } catch (t: Throwable) { log(t) }
+            }
+        })
+    }
+
+    // ---- the dropdown card -----------------------------------------------------
+
+    /**
+     * Where this page's dropdown menus open. The menu itself stays Nothing's
+     * (NtCustDropDownPreference's popup: its rounded `nt_cust_drop_down_spinner`
+     * and text style); only its place and width change, on this page's rows.
+     *
+     * A DropDownPreference opens its menu from an invisible Spinner at the start
+     * of its row, so the menu lands over the row's own title and summary (seen
+     * on the phone, in Nothing's own Dark theme > Schedule as well) and is only
+     * as wide as its longest entry. Android places the popup from the Spinner's
+     * position on screen (PopupWindow.findDropDownPosition, transforms included)
+     * and takes the width set before it opens (Spinner.DropdownPopup
+     * .computeContentWidth), so a translation of that invisible Spinner and a
+     * width put the menu as a card lined up with the row's text: just below the
+     * row, or just above it when there is no room below; nothing Nothing lays
+     * out is moved. If it fits neither way, Nothing's own placement stays.
+     */
+    private fun placePopup(sp: Spinner) {
+        if (sp.javaClass != Spinner::class.java || sp.layoutDirection == View.LAYOUT_DIRECTION_RTL) return
+        if (sp.context.activity()?.intent?.getBooleanExtra(MARK, false) != true) return
+        val row = sp.parent as? View ?: return
+        val title = row.findViewById<TextView>(android.R.id.title) ?: return
+        val adapter = sp.adapter ?: return
+        val pad = Rect().also { sp.popupBackground?.getPadding(it) }
+        sp.translationX = 0f; sp.translationY = 0f; sp.dropDownWidth = -2
+        val a = IntArray(2).also { sp.getLocationOnScreen(it) }
+        val r = IntArray(2).also { row.getLocationOnScreen(it) }
+        val t = IntArray(2).also { title.getLocationOnScreen(it) }
+        val margin = t[0] - r[0]
+        val boxWidth = row.width - 2 * margin
+        if (margin <= 0 || boxWidth <= pad.left + pad.right) return
+        val content = boxWidth - pad.left - pad.right
+        val spec = View.MeasureSpec.makeMeasureSpec(content, View.MeasureSpec.EXACTLY)
+        val free = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        val height = pad.top + pad.bottom + (0 until adapter.count).sumOf { i ->
+            adapter.getDropDownView(i, null, sp).let { it.measure(spec, free); it.measuredHeight }
+        }
+        val frame = Rect().also { sp.rootView.getWindowVisibleDisplayFrame(it) }
+        val gap = (4 * sp.resources.displayMetrics.density).toInt()
+        val top = when {
+            r[1] + row.height + gap + height <= frame.bottom -> r[1] + row.height + gap
+            r[1] - gap - height >= frame.top -> r[1] - gap - height
+            else -> return
+        }
+        // The popup's top: the Spinner's top, plus its height unless it overlaps it.
+        val popupTop = a[1] + if (overlaps(sp)) 0 else sp.height
+        // The popup's left: the Spinner's left, less its background's padding,
+        // plus the Spinner's own (computeContentWidth).
+        val popupLeft = a[0] - pad.left + sp.paddingLeft
+        sp.dropDownWidth = content
+        sp.translationX = (t[0] - popupLeft).toFloat()
+        sp.translationY = (top - popupTop).toFloat()
+    }
+
+    /** Whether the Spinner's popup overlaps it (its style's overlapAnchor; not set on the phone). */
+    private fun overlaps(sp: Spinner): Boolean = try {
+        val popup = XposedHelpers.getObjectField(sp, "mPopup")
+        (XposedHelpers.getObjectField(popup, "mPopup") as PopupWindow).overlapAnchor
+    } catch (t: Throwable) { false }
+
+    private fun Context.activity(): Activity? {
+        var c: Context? = this
+        while (c is ContextWrapper) { if (c is Activity) return c; c = c.baseContext }
+        return null
     }
 
     // ---- the page ------------------------------------------------------------

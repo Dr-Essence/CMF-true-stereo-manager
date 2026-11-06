@@ -43,7 +43,8 @@ Magisk / KernelSU / APatch.
 - Stereo speakers page inside Nothing Settings (v1.0.65, screen recording): it opens inside
   Settings with Nothing's own rows, shows the real state, and opening it no longer resets
   anything. Its dropdowns open Nothing's own popup (`nt_cust_drop_down_spinner`, the same
-  one as Display > Dark theme > Schedule).
+  one as Display > Dark theme > Schedule, screenshot), which lands over the row's title and
+  is only as wide as its longest entry, on Nothing's own page too.
 
 **Not tested on a phone yet**
 - Next build: **Stereo in Nothing's Settings and Quick Settings** (both editions).
@@ -72,6 +73,14 @@ Magisk / KernelSU / APatch.
     PreferenceFragment copies the screen's own title to the activity in onResume, and the
     carrier's screen is called "Media"; the page now names its screen "Stereo speakers"
     when it builds, so Settings' own pass shows that title. Not seen on the phone yet.
+  - Next build: the page's dropdowns open as a card in line with their row. Still Nothing's
+    popup (its rounded background and text); only its place and width change, on this
+    page only: as wide as the row's text column, just below the row, or just above it when
+    there is no room below (Nothing's own placement stays if it fits neither way). Android
+    places that popup from the invisible Spinner's position on screen, transforms included,
+    and takes a width set before it opens (read from the phone's framework: Spinner
+    .DropdownPopup.computeContentWidth, PopupWindow.findDropDownPosition), so tapping a row
+    moves only that invisible Spinner. Compiled against Android 35; not seen on the phone yet.
   - Live state, no root to look: the app keeps the last state it read (StateCache); every
     reading publishes it and, when something changed, notifies
     `content://<app>.settingstile/state` (the page listens and updates while open) and the
