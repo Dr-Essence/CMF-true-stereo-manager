@@ -61,7 +61,7 @@ Magisk / KernelSU / APatch.
     itself, replaces its rows with Nothing's own widgets (NtCustSwitchPreferenceCompat,
     Preference, PreferenceCategory): Earpiece speaker, Stereo, Earpiece and
     Speaker level, Speaker boost, Deep bass guard, Earpiece leveller, Earpiece limiter, and a
-    row that opens the app. Settings' androidx.preference names are obfuscated; the 17 it
+    row that opens the app. Settings' androidx.preference names are obfuscated; the 16 it
     uses were read from Settings 16.0.0 and checked against its bytecode (dexdump: all
     present, public, exact signatures), and are checked again when Settings starts: if one
     is missing, nothing is hooked and the row opens the app. State and changes go through the
@@ -82,9 +82,16 @@ Magisk / KernelSU / APatch.
     the chosen one filled. One tap sets it; the summary still says the value. They take the
     row's own font and Settings' colours (lit: its `preferenceCategoryTitleTextColor`, the
     category titles' colour; rings: the summary colour), and are dimmed with their row when
-    it is off. The rows are plain Nothing rows (not tappable themselves); the control is
-    added after Settings binds the row (`Preference.o0`) and removed from a recycled row
-    first. Compiled against Android 35; not seen on the phone yet.
+    it is off. The rows are plain Nothing rows; the control is added after Settings binds
+    the row (`Preference.o0`) and removed from a recycled row first. Seen on the phone
+    (v1.0.68): the dots and pills look right ("way way better").
+  - Fixed (seen on the phone, v1.0.68): the titles of the dot and pill rows stayed grey
+    while on. Those rows were made unselectable, and Preference.o0 paints an unselectable,
+    enabled row's title in its summary's colour of the moment, which is still the dimmed
+    one when the row has just been turned on (it applies the row's enabled state after
+    that). The rows are now left selectable (a tap beside the dots does nothing), so their
+    titles are Nothing's normal ones: dimmed only when the row is off. Not seen on the
+    phone yet.
   - Live state, no root to look: the app keeps the last state it read (StateCache); every
     reading publishes it and, when something changed, notifies
     `content://<app>.settingstile/state` (the page listens and updates while open) and the

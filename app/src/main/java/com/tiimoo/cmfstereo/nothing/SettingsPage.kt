@@ -60,7 +60,6 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
     private val setPersistent = m(pref, "b1", Boolean::class.javaPrimitiveType!!)
     private val setOrder = m(pref, "a1", Int::class.javaPrimitiveType!!)
     private val getContext = pref.getMethod("B").also { check(it.returnType == Context::class.java) }
-    private val setSelectable = m(pref, "d1", Boolean::class.javaPrimitiveType!!)
     private val isEnabled = pref.getMethod("c0").also { check(it.returnType == Boolean::class.javaPrimitiveType) }
     // onBindViewHolder(PreferenceViewHolder), and the holder's itemView (RecyclerView.ViewHolder).
     private val holder = XposedHelpers.findClass("androidx.preference.g0", cl)
@@ -240,8 +239,10 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
         /** A row with dots (a level) or pills (a choice) under its summary. */
         fun ctl(key: String, title: String, parent: Any, c: Control): Any =
             place(newPref.newInstance(ctx), parent).also { p ->
+                // Left selectable: Preference.o0 paints an unselectable row's title
+                // in its summary's colour of the moment, still the dimmed one when
+                // the row has just been turned on (seen on the phone).
                 setKey.invoke(p, key); setTitle.invoke(p, title)
-                setSelectable.invoke(p, false)
                 controls[p] = c
             }
         fun dots(key: String, title: String, min: Int, max: Int, parent: Any, summary: (String) -> String = { it }, onPick: (String) -> Unit) =
