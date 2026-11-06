@@ -64,6 +64,9 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
     // onBindViewHolder(PreferenceViewHolder), and the holder's itemView (RecyclerView.ViewHolder).
     private val holder = XposedHelpers.findClass("androidx.preference.g0", cl)
     private val bind = m(pref, "o0", holder)
+    // notifyChanged: Settings rebinds the row (redraws its dots or pills).
+    private val notifyChanged = pref.getDeclaredMethod("i0")
+        .also { check(it.returnType == Void.TYPE && it.parameterTypes.isEmpty()); it.isAccessible = true }
     private val itemView = XposedHelpers.findClass("androidx.recyclerview.widget.m1", cl).getField("c")
         .also { check(it.type == View::class.java && it.declaringClass.isAssignableFrom(holder)) }
     private val setOnChange = listenerSetter("Y0", "onPreferenceChange")
@@ -139,7 +142,7 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
     private class Control(
         val min: Int = 0, val max: Int = 0,
         val labels: List<String> = emptyList(), val values: List<String> = emptyList(),
-        val summary: (String) -> String = { it }, val onPick: (String) -> Unit
+        val onPick: (String) -> Unit
     ) { var value: String? = null }
 
     /** This page's rows with a control; weak, so a closed page leaves nothing behind. */
@@ -179,15 +182,16 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
 
     /** A tap on a dot or pill: the row shows it at once, then it is set. */
     private fun pick(p: Any, c: Control, v: String) {
-        c.value = v
-        setSummary.invoke(p, summaryOf(c, v))
+        show(p, c, v)
         c.onPick(v)
     }
 
-    private fun summaryOf(c: Control, v: String): String =
-        if (c.labels.isEmpty()) c.summary(v) else c.labels.getOrElse(c.values.indexOf(v)) { v }
-
-    private fun boostName(v: String) = if (v == "0") "Off" else "+$v dB"
+    /** The row's dots or pills show [v]: Settings redraws the row. */
+    private fun show(p: Any, c: Control, v: String) {
+        if (c.value == v) return
+        c.value = v
+        notifyChanged.invoke(p)
+    }
 
     /** The colour of Settings' own category titles and switches (its preferenceCategoryTitleTextColor). */
     private fun categoryColor(ctx: Context): Int {
@@ -236,32 +240,37 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
                     onChange(a[1] as Boolean); true
                 })
             }
-        /** A row with dots (a level) or pills (a choice) under its summary. */
-        fun ctl(key: String, title: String, parent: Any, c: Control): Any =
+        /** A row with a description, and dots (a level) or pills (a choice) under it. */
+        fun ctl(key: String, title: String, description: String, parent: Any, c: Control): Any =
             place(newPref.newInstance(ctx), parent).also { p ->
                 // Left selectable: Preference.o0 paints an unselectable row's title
                 // in its summary's colour of the moment, still the dimmed one when
                 // the row has just been turned on (seen on the phone).
-                setKey.invoke(p, key); setTitle.invoke(p, title)
+                setKey.invoke(p, key); setTitle.invoke(p, title); setSummary.invoke(p, description)
                 controls[p] = c
             }
-        fun dots(key: String, title: String, min: Int, max: Int, parent: Any, summary: (String) -> String = { it }, onPick: (String) -> Unit) =
-            ctl(key, title, parent, Control(min = min, max = max, summary = summary, onPick = onPick))
-        fun pills(key: String, title: String, labels: List<String>, parent: Any, onPick: (String) -> Unit) =
-            ctl(key, title, parent, Control(labels = labels, values = CHOICES, onPick = onPick))
+        fun dots(key: String, title: String, description: String, min: Int, max: Int, parent: Any, onPick: (String) -> Unit) =
+            ctl(key, title, description, parent, Control(min = min, max = max, onPick = onPick))
+        fun pills(key: String, title: String, description: String, labels: List<String>, parent: Any, onPick: (String) -> Unit) =
+            ctl(key, title, description, parent, Control(labels = labels, values = CHOICES, onPick = onPick))
 
         val sound = cat("Speakers")
         rows.armed = sw("cmf_armed", "Earpiece speaker", "Play through the earpiece as well as the bottom speaker", sound) { set(rows, act, "armed", if (it) "on" else "off") }
         rows.stereo = sw("cmf_stereo", "Stereo", null, sound) { set(rows, act, "channels", if (it) "stereo" else "mono") }
         val lv = cat("Levels")
-        rows.ear = dots("cmf_ear", "Earpiece level", 1, 10, lv) { set(rows, act, "earLevel", it) }
-        rows.spk = dots("cmf_spk", "Speaker level", 1, 10, lv) { set(rows, act, "spkLevel", it) }
+        rows.ear = dots("cmf_ear", "Earpiece level",
+            "10 is the loudest the earpiece goes. Turn it down if it ever buzzes", 1, 10, lv) { set(rows, act, "earLevel", it) }
+        rows.spk = dots("cmf_spk", "Speaker level",
+            "Balances the two sides: lower it until the earpiece is as clear as the speaker", 1, 10, lv) { set(rows, act, "spkLevel", it) }
         rows.spkCat = lv
         val prot = cat("Protection")
         rows.protCat = prot
-        rows.boost = dots("cmf_boost", "Speaker boost", 0, 6, prot, ::boostName) { set(rows, act, "boost", it) }
-        rows.bass = pills("cmf_bass", "Deep bass guard", BASS, prot) { set(rows, act, "bass", it) }
-        rows.leveller = pills("cmf_leveller", "Earpiece leveller", LEVELLER, prot) { set(rows, act, "leveller", it) }
+        rows.boost = dots("cmf_boost", "Speaker boost",
+            "Louder speaker without more strain, +1 dB a dot. The first dot is off", 0, 6, prot) { set(rows, act, "boost", it) }
+        rows.bass = pills("cmf_bass", "Deep bass guard",
+            "Holds back only the deepest bass, and only when it gets loud enough to strain the speaker", BASS, prot) { set(rows, act, "bass", it) }
+        rows.leveller = pills("cmf_leveller", "Earpiece leveller",
+            "Brings up the earpiece's quiet parts so it keeps up with the speaker", LEVELLER, prot) { set(rows, act, "leveller", it) }
         rows.limit = sw("cmf_limit", "Earpiece limiter", "Stops the earpiece crackling at its very loudest", prot) { set(rows, act, "limit", if (it) "on" else "off") }
         val more = cat("More")
         place(newPref.newInstance(ctx), more).also { p ->
@@ -320,9 +329,7 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
                 else -> "Both speakers play everything"
             })
         }
-        // A new value redraws its row's dots or pills: the summary changes with
-        // it, and Settings rebinds a row whose summary changes.
-        fun value(p: Any?, v: String) { val c = p?.let { controls[it] } ?: return; c.value = v; setSummary.invoke(p, summaryOf(c, v)) }
+        fun value(p: Any?, v: String) { val c = p?.let { controls[it] } ?: return; show(p, c, v) }
         b.getInt("earLevel", -1).let { if (it > 0) value(rows.ear, "$it") }
         value(rows.spk, "${b.getInt("spkLevel", 10)}")
         value(rows.boost, "${b.getInt("boost")}")

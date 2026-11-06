@@ -61,7 +61,7 @@ Magisk / KernelSU / APatch.
     itself, replaces its rows with Nothing's own widgets (NtCustSwitchPreferenceCompat,
     Preference, PreferenceCategory): Earpiece speaker, Stereo, Earpiece and
     Speaker level, Speaker boost, Deep bass guard, Earpiece leveller, Earpiece limiter, and a
-    row that opens the app. Settings' androidx.preference names are obfuscated; the 16 it
+    row that opens the app. Settings' androidx.preference names are obfuscated; the 17 it
     uses were read from Settings 16.0.0 and checked against its bytecode (dexdump: all
     present, public, exact signatures), and are checked again when Settings starts: if one
     is missing, nothing is hooked and the row opens the app. State and changes go through the
@@ -79,7 +79,7 @@ Magisk / KernelSU / APatch.
     the row's summary in its text column: Earpiece level and Speaker level as 10 dots,
     Speaker boost as 7 (Off, +1 … +6 dB), lit up to the level; Deep bass guard
     (Off / Light / Medium / Strong) and Earpiece leveller (Off / Low / Mid / High) as pills,
-    the chosen one filled. One tap sets it; the summary still says the value. They take the
+    the chosen one filled. One tap sets it. They take the
     row's own font and Settings' colours (lit: its `preferenceCategoryTitleTextColor`, the
     category titles' colour; rings: the summary colour), and are dimmed with their row when
     it is off. The rows are plain Nothing rows; the control is added after Settings binds
@@ -92,6 +92,11 @@ Magisk / KernelSU / APatch.
     that). The rows are now left selectable (a tap beside the dots does nothing), so their
     titles are Nothing's normal ones: dimmed only when the row is off. Not seen on the
     phone yet.
+  - Next build: every row has a description under its title, like Earpiece speaker's (asked
+    for on the phone): the dot and pill rows say what they do (from the app's hints) instead
+    of their value, which the dots and pills show. A new value redraws the row through
+    Preference's notifyChanged (`i0`, checked against the bytecode) instead of a changed
+    summary. Not seen on the phone yet.
   - Live state, no root to look: the app keeps the last state it read (StateCache); every
     reading publishes it and, when something changed, notifies
     `content://<app>.settingstile/state` (the page listens and updates while open) and the
