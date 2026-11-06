@@ -38,7 +38,8 @@ Magisk / KernelSU / APatch.
 v1.0.35 and later). For module v1.0.6 (protection, leveller, instant sync); older modules show
 fewer settings. The history of every build is in [CHANGELOG.md](CHANGELOG.md).
 
-**Verified on the phone** (CMF Phone 1, Nothing OS B4.1, Android 16, module v1.0.6)
+**Verified on the phone** (CMF Phone 1 A015, Nothing OS 4.1 `Tetris-B4.1-260615-1652-EEA`,
+Android 16, module v1.0.6)
 - Both editions: on/off, Mono/Stereo switching live, earpiece and speaker level; the clean
   edition in NDot from the phone.
 - Protection (Speaker boost, Deep bass guard, Earpiece limiter) and the Earpiece leveller, set
