@@ -3,17 +3,15 @@ package com.tiimoo.cmfstereo.nothing
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
-import android.graphics.Rect
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.TypedValue
 import android.view.View
-import android.widget.PopupWindow
-import android.widget.Spinner
+import android.widget.RelativeLayout
 import android.widget.TextView
 import com.tiimoo.cmfstereo.BuildConfig
 import de.robv.android.xposed.XC_MethodHook
@@ -21,6 +19,7 @@ import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
+import java.util.WeakHashMap
 
 /**
  * The "Stereo speakers" page, inside Nothing Settings (runs in the Settings
@@ -30,7 +29,9 @@ import java.lang.reflect.Proxy
  * own SubSettings with a small, allowed Sound page (MediaControlsSettings) as
  * the carrier; once that page has built itself, its rows are replaced with
  * this page's, made from Nothing's own preference widgets
- * (NtCustSwitchPreferenceCompat, NtCustDropDownPreference, PreferenceCategory).
+ * (NtCustSwitchPreferenceCompat, Preference, PreferenceCategory); levels and
+ * choices are the app's dots and pills (SettingsControls) under their row's
+ * summary.
  * Settings skips the carrier's own controllers once their rows are gone
  * (DashboardFragment: "Cannot find preference with key").
  *
@@ -48,10 +49,8 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
     private val pref = XposedHelpers.findClass("androidx.preference.Preference", cl)
     private val group = XposedHelpers.findClass("androidx.preference.PreferenceGroup", cl)
     private val twoState = XposedHelpers.findClass("androidx.preference.TwoStatePreference", cl)
-    private val list = XposedHelpers.findClass("androidx.preference.ListPreference", cl)
     private val category = XposedHelpers.findClass("androidx.preference.PreferenceCategory", cl)
     private val switchCls = XposedHelpers.findClass("com.android.settingslib.ntuisupport.preference.NtCustSwitchPreferenceCompat", cl)
-    private val dropCls = XposedHelpers.findClass("com.nothing.ui.support.NtCustDropDownPreference", cl)
     private val dashboard = XposedHelpers.findClass("com.android.settings.dashboard.DashboardFragment", cl)
 
     private val setKey = m(pref, "V0", String::class.java)
@@ -61,20 +60,20 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
     private val setPersistent = m(pref, "b1", Boolean::class.javaPrimitiveType!!)
     private val setOrder = m(pref, "a1", Int::class.javaPrimitiveType!!)
     private val getContext = pref.getMethod("B").also { check(it.returnType == Context::class.java) }
-    // setSummaryProvider: a theme may give dropdowns an automatic summary, and
-    // setSummary throws while one is set ("already has a SummaryProvider").
-    private val setSummaryProvider = pref.methods.single { it.name == "j1" && it.parameterTypes.size == 1 }
+    private val setSelectable = m(pref, "d1", Boolean::class.javaPrimitiveType!!)
+    private val isEnabled = pref.getMethod("c0").also { check(it.returnType == Boolean::class.javaPrimitiveType) }
+    // onBindViewHolder(PreferenceViewHolder), and the holder's itemView (RecyclerView.ViewHolder).
+    private val holder = XposedHelpers.findClass("androidx.preference.g0", cl)
+    private val bind = m(pref, "o0", holder)
+    private val itemView = XposedHelpers.findClass("androidx.recyclerview.widget.m1", cl).getField("c")
+        .also { check(it.type == View::class.java && it.declaringClass.isAssignableFrom(holder)) }
     private val setOnChange = listenerSetter("Y0", "onPreferenceChange")
     private val setOnClick = listenerSetter("Z0", "onPreferenceClick")
     private val removeAll = m(group, "E1")
     private val add = m(group, "u1", pref)
     private val setChecked = m(twoState, "v1", Boolean::class.javaPrimitiveType!!)
-    private val setEntries = m(list, "Q1", Array<CharSequence>::class.java)
-    private val setValues = m(list, "R1", Array<CharSequence>::class.java)
-    private val setValue = m(list, "S1", String::class.java)
-    private val getValue = m(list, "N1").also { check(it.returnType == String::class.java) }
     private val newSwitch = switchCls.getConstructor(Context::class.java)
-    private val newDrop = dropCls.getConstructor(Context::class.java)
+    private val newPref = pref.getConstructor(Context::class.java)
     private val newCategory = category.getConstructor(Context::class.java)
 
     private fun m(c: Class<*>, name: String, vararg p: Class<*>): Method = c.getMethod(name, *p)
@@ -123,89 +122,94 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
                 try { build(f, act) } catch (t: Throwable) { log(t) }
             }
         })
-        // 3. This page's dropdowns open as a card in line with their row.
-        XposedHelpers.findAndHookMethod(Spinner::class.java, "performClick", object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                try { placePopup(param.thisObject as Spinner) } catch (t: Throwable) { log(t) }
+        // 3. This page's levels and choices: dots and pills under their row's summary.
+        XposedBridge.hookMethod(bind, object : XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                try { bindControl(param.thisObject, itemView.get(param.args[0]) as View) } catch (t: Throwable) { log(t) }
             }
         })
     }
 
-    // ---- the dropdown card -----------------------------------------------------
+    // ---- the dots and pills ----------------------------------------------------
 
     /**
-     * Where this page's dropdown menus open. The menu itself stays Nothing's
-     * (NtCustDropDownPreference's popup: its rounded `nt_cust_drop_down_spinner`
-     * and text style); only its place and width change, on this page's rows.
-     *
-     * A DropDownPreference opens its menu from an invisible Spinner at the start
-     * of its row, so the menu lands over the row's own title and summary (seen
-     * on the phone, in Nothing's own Dark theme > Schedule as well) and is only
-     * as wide as its longest entry. Android places the popup from the Spinner's
-     * position on screen (PopupWindow.findDropDownPosition, transforms included)
-     * and takes the width set before it opens (Spinner.DropdownPopup
-     * .computeContentWidth), so a translation of that invisible Spinner and a
-     * width put the menu as a card lined up with the row's text: just below the
-     * row, or just above it when there is no room below; nothing Nothing lays
-     * out is moved. If it fits neither way, Nothing's own placement stays.
+     * A level (dots [min]..[max]) or a choice (pills with [labels] for [values])
+     * shown under a row's summary; [value] is what the row holds, null until the
+     * state is shown (nothing is lit and taps do nothing until then).
      */
-    private fun placePopup(sp: Spinner) {
-        if (sp.javaClass != Spinner::class.java || sp.layoutDirection == View.LAYOUT_DIRECTION_RTL) return
-        if (sp.context.activity()?.intent?.getBooleanExtra(MARK, false) != true) return
-        val row = sp.parent as? View ?: return
+    private class Control(
+        val min: Int = 0, val max: Int = 0,
+        val labels: List<String> = emptyList(), val values: List<String> = emptyList(),
+        val summary: (String) -> String = { it }, val onPick: (String) -> Unit
+    ) { var value: String? = null }
+
+    /** This page's rows with a control; weak, so a closed page leaves nothing behind. */
+    private val controls = WeakHashMap<Any, Control>()
+
+    /**
+     * After Settings binds a row: a control of ours is put under the summary,
+     * in the row's text column; one left there from a recycled row is removed
+     * first. The row itself stays as Settings laid it out.
+     */
+    private fun bindControl(p: Any, row: View) {
         val title = row.findViewById<TextView>(android.R.id.title) ?: return
-        val adapter = sp.adapter ?: return
-        val pad = Rect().also { sp.popupBackground?.getPadding(it) }
-        sp.translationX = 0f; sp.translationY = 0f; sp.dropDownWidth = -2
-        val a = IntArray(2).also { sp.getLocationOnScreen(it) }
-        val r = IntArray(2).also { row.getLocationOnScreen(it) }
-        val t = IntArray(2).also { title.getLocationOnScreen(it) }
-        val margin = t[0] - r[0]
-        val boxWidth = row.width - 2 * margin
-        if (margin <= 0 || boxWidth <= pad.left + pad.right) return
-        val content = boxWidth - pad.left - pad.right
-        val spec = View.MeasureSpec.makeMeasureSpec(content, View.MeasureSpec.EXACTLY)
-        val free = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        val height = pad.top + pad.bottom + (0 until adapter.count).sumOf { i ->
-            adapter.getDropDownView(i, null, sp).let { it.measure(spec, free); it.measuredHeight }
+        val box = title.parent as? RelativeLayout ?: return
+        box.findViewWithTag<View>(CONTROL)?.let { box.removeView(it) }
+        val c = controls[p] ?: return
+        val summary = row.findViewById<TextView>(android.R.id.summary)
+        val look = SettingsControls.Look(
+            lit = categoryColor(title.context),
+            line = ((summary?.currentTextColor ?: title.currentTextColor) and 0x00FFFFFF) or 0x66000000,
+            text = title.currentTextColor,
+            font = title.typeface,
+            textPx = summary?.textSize ?: title.textSize
+        )
+        val on = isEnabled.invoke(p) as Boolean
+        val view = if (c.labels.isEmpty()) {
+            SettingsControls.Dots(box.context, c.min, c.max, c.value?.toIntOrNull(), look, on) { pick(p, c, "$it") }
+        } else {
+            SettingsControls.pills(box.context, c.labels, c.values.indexOf(c.value).takeIf { it >= 0 }, look, on) { pick(p, c, c.values[it]) }
         }
-        val frame = Rect().also { sp.rootView.getWindowVisibleDisplayFrame(it) }
-        val gap = (4 * sp.resources.displayMetrics.density).toInt()
-        val top = when {
-            r[1] + row.height + gap + height <= frame.bottom -> r[1] + row.height + gap
-            r[1] - gap - height >= frame.top -> r[1] - gap - height
-            else -> return
-        }
-        // The popup's top: the Spinner's top, plus its height unless it overlaps it.
-        val popupTop = a[1] + if (overlaps(sp)) 0 else sp.height
-        // The popup's left: the Spinner's left, less its background's padding,
-        // plus the Spinner's own (computeContentWidth).
-        val popupLeft = a[0] - pad.left + sp.paddingLeft
-        sp.dropDownWidth = content
-        sp.translationX = (t[0] - popupLeft).toFloat()
-        sp.translationY = (top - popupTop).toFloat()
+        view.tag = CONTROL
+        val d = box.resources.displayMetrics.density
+        box.addView(view, RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT).apply {
+            addRule(RelativeLayout.BELOW, if (summary != null) android.R.id.summary else android.R.id.title)
+            topMargin = (12 * d).toInt()
+        })
     }
 
-    /** Whether the Spinner's popup overlaps it (its style's overlapAnchor; not set on the phone). */
-    private fun overlaps(sp: Spinner): Boolean = try {
-        val popup = XposedHelpers.getObjectField(sp, "mPopup")
-        (XposedHelpers.getObjectField(popup, "mPopup") as PopupWindow).overlapAnchor
-    } catch (t: Throwable) { false }
+    /** A tap on a dot or pill: the row shows it at once, then it is set. */
+    private fun pick(p: Any, c: Control, v: String) {
+        c.value = v
+        setSummary.invoke(p, summaryOf(c, v))
+        c.onPick(v)
+    }
 
-    private fun Context.activity(): Activity? {
-        var c: Context? = this
-        while (c is ContextWrapper) { if (c is Activity) return c; c = c.baseContext }
-        return null
+    private fun summaryOf(c: Control, v: String): String =
+        if (c.labels.isEmpty()) c.summary(v) else c.labels.getOrElse(c.values.indexOf(v)) { v }
+
+    private fun boostName(v: String) = if (v == "0") "Off" else "+$v dB"
+
+    /** The colour of Settings' own category titles and switches (its preferenceCategoryTitleTextColor). */
+    private fun categoryColor(ctx: Context): Int {
+        val tv = TypedValue()
+        val attr = ctx.resources.getIdentifier("preferenceCategoryTitleTextColor", "attr", SETTINGS)
+        if (attr != 0 && ctx.theme.resolveAttribute(attr, tv, true)) {
+            if (tv.resourceId != 0) return ctx.getColorStateList(tv.resourceId).defaultColor
+            if (tv.type in TypedValue.TYPE_FIRST_COLOR_INT..TypedValue.TYPE_LAST_COLOR_INT) return tv.data
+        }
+        return if (ctx.theme.resolveAttribute(android.R.attr.colorAccent, tv, true)) tv.data else 0xFF79C5DA.toInt()
     }
 
     // ---- the page ------------------------------------------------------------
 
     private class Rows(val screen: Any) {
         /**
-         * False until the real state is shown. Seen on the phone: a dropdown
-         * reports its first entry as a change when its spinner is first bound
-         * while it has no value yet (DropDownPreference), so every open reset
-         * the levels and protection until this guard.
+         * False until the real state is shown: no change is taken before then.
+         * Seen on the phone with the dropdowns this page had before: a
+         * DropDownPreference reported its first entry as a change when first
+         * bound without a value, so every open reset the levels and
+         * protection. The dots and pills take no tap until they hold a value.
          */
         @Volatile var ready = false
         var armed: Any? = null; var stereo: Any? = null
@@ -233,37 +237,33 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
                     onChange(a[1] as Boolean); true
                 })
             }
-        fun drop(key: String, title: String, entries: List<String>, values: List<String>, parent: Any, onChange: (String) -> Unit): Any =
-            place(newDrop.newInstance(ctx), parent).also { p ->
-                setSummaryProvider.invoke(p, null)
+        /** A row with dots (a level) or pills (a choice) under its summary. */
+        fun ctl(key: String, title: String, parent: Any, c: Control): Any =
+            place(newPref.newInstance(ctx), parent).also { p ->
                 setKey.invoke(p, key); setTitle.invoke(p, title)
-                setEntries.invoke(p, entries.toTypedArray<CharSequence>()); setValues.invoke(p, values.toTypedArray<CharSequence>())
-                setOnChange.invoke(p, listener(setOnChange.parameterTypes[0]) { a ->
-                    val v = a[1] as String
-                    // Only a real choice: not before the state is shown, and not
-                    // the value it already holds (a rebind re-selecting it).
-                    if (!rows.ready || v == getValue.invoke(a[0])) return@listener false
-                    setSummary.invoke(a[0], entries.getOrElse(values.indexOf(v)) { v })
-                    onChange(v); true
-                })
+                setSelectable.invoke(p, false)
+                controls[p] = c
             }
+        fun dots(key: String, title: String, min: Int, max: Int, parent: Any, summary: (String) -> String = { it }, onPick: (String) -> Unit) =
+            ctl(key, title, parent, Control(min = min, max = max, summary = summary, onPick = onPick))
+        fun pills(key: String, title: String, labels: List<String>, parent: Any, onPick: (String) -> Unit) =
+            ctl(key, title, parent, Control(labels = labels, values = CHOICES, onPick = onPick))
 
-        val levels = (1..10).map { "$it" }
         val sound = cat("Speakers")
         rows.armed = sw("cmf_armed", "Earpiece speaker", "Play through the earpiece as well as the bottom speaker", sound) { set(rows, act, "armed", if (it) "on" else "off") }
         rows.stereo = sw("cmf_stereo", "Stereo", null, sound) { set(rows, act, "channels", if (it) "stereo" else "mono") }
         val lv = cat("Levels")
-        rows.ear = drop("cmf_ear", "Earpiece level", levels, levels, lv) { set(rows, act, "earLevel", it) }
-        rows.spk = drop("cmf_spk", "Speaker level", levels, levels, lv) { set(rows, act, "spkLevel", it) }
+        rows.ear = dots("cmf_ear", "Earpiece level", 1, 10, lv) { set(rows, act, "earLevel", it) }
+        rows.spk = dots("cmf_spk", "Speaker level", 1, 10, lv) { set(rows, act, "spkLevel", it) }
         rows.spkCat = lv
         val prot = cat("Protection")
         rows.protCat = prot
-        rows.boost = drop("cmf_boost", "Speaker boost", (0..6).map { if (it == 0) "Off" else "+$it dB" }, (0..6).map { "$it" }, prot) { set(rows, act, "boost", it) }
-        rows.bass = drop("cmf_bass", "Deep bass guard", listOf("Off", "Light", "Medium", "Strong"), listOf("off", "light", "medium", "strong"), prot) { set(rows, act, "bass", it) }
-        rows.leveller = drop("cmf_leveller", "Earpiece leveller", listOf("Off", "Low", "Mid", "High"), listOf("off", "light", "medium", "strong"), prot) { set(rows, act, "leveller", it) }
+        rows.boost = dots("cmf_boost", "Speaker boost", 0, 6, prot, ::boostName) { set(rows, act, "boost", it) }
+        rows.bass = pills("cmf_bass", "Deep bass guard", BASS, prot) { set(rows, act, "bass", it) }
+        rows.leveller = pills("cmf_leveller", "Earpiece leveller", LEVELLER, prot) { set(rows, act, "leveller", it) }
         rows.limit = sw("cmf_limit", "Earpiece limiter", "Stops the earpiece crackling at its very loudest", prot) { set(rows, act, "limit", if (it) "on" else "off") }
         val more = cat("More")
-        place(pref.getConstructor(Context::class.java).newInstance(ctx), more).also { p ->
+        place(newPref.newInstance(ctx), more).also { p ->
             setKey.invoke(p, "cmf_open"); setTitle.invoke(p, "CMF Stereo"); setSummary.invoke(p, "Open the app")
             setOnClick.invoke(p, listener(setOnClick.parameterTypes[0]) {
                 act.startActivity(Intent().setClassName(BuildConfig.APPLICATION_ID, "com.tiimoo.cmfstereo.MainActivity")
@@ -319,13 +319,14 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
                 else -> "Both speakers play everything"
             })
         }
-        val ear = b.getInt("earLevel", -1)
-        rows.ear?.let { if (ear > 0) { setValue.invoke(it, "$ear"); setSummary.invoke(it, "$ear") } }
-        rows.spk?.let { val v = b.getInt("spkLevel", 10); setValue.invoke(it, "$v"); setSummary.invoke(it, "$v") }
-        rows.boost?.let { val v = b.getInt("boost"); setValue.invoke(it, "$v"); setSummary.invoke(it, if (v == 0) "Off" else "+$v dB") }
-        fun named(v: String?, names: List<String>) = when (v) { "light" -> names[1]; "medium" -> names[2]; "strong" -> names[3]; else -> names[0] }
-        rows.bass?.let { val v = b.getString("bass") ?: "medium"; setValue.invoke(it, v); setSummary.invoke(it, named(v, listOf("Off", "Light", "Medium", "Strong"))) }
-        rows.leveller?.let { val v = b.getString("leveller") ?: "off"; setValue.invoke(it, v); setSummary.invoke(it, named(v, listOf("Off", "Low", "Mid", "High"))) }
+        // A new value redraws its row's dots or pills: the summary changes with
+        // it, and Settings rebinds a row whose summary changes.
+        fun value(p: Any?, v: String) { val c = p?.let { controls[it] } ?: return; c.value = v; setSummary.invoke(p, summaryOf(c, v)) }
+        b.getInt("earLevel", -1).let { if (it > 0) value(rows.ear, "$it") }
+        value(rows.spk, "${b.getInt("spkLevel", 10)}")
+        value(rows.boost, "${b.getInt("boost")}")
+        value(rows.bass, (b.getString("bass") ?: "medium").takeIf { it in CHOICES } ?: "medium")
+        value(rows.leveller, (b.getString("leveller") ?: "off").takeIf { it in CHOICES } ?: "off")
         rows.limit?.let { setChecked.invoke(it, b.getBoolean("limit", true)) }
         rows.ready = true
         setAll(rows, ok)
@@ -351,6 +352,10 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
         private const val ENTRY = "com.tiimoo.cmfstereo.nothing.SoundSettingsEntry"
         private const val MARK = "cmf_stereo_page"
         private const val TITLE = "Stereo speakers"
+        private const val CONTROL = "cmf_stereo_control"
+        private val CHOICES = listOf("off", "light", "medium", "strong")
+        private val BASS = listOf("Off", "Light", "Medium", "Strong")
+        private val LEVELLER = listOf("Off", "Low", "Mid", "High")
 
         private fun log(t: Throwable) = XposedBridge.log("CMF Stereo: settings page: $t")
 

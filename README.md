@@ -42,9 +42,11 @@ Magisk / KernelSU / APatch.
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
 - Stereo speakers page inside Nothing Settings (v1.0.65, screen recording): it opens inside
   Settings with Nothing's own rows, shows the real state, and opening it no longer resets
-  anything. Its dropdowns open Nothing's own popup (`nt_cust_drop_down_spinner`, the same
-  one as Display > Dark theme > Schedule, screenshot), which lands over the row's title and
-  is only as wide as its longest entry, on Nothing's own page too.
+  anything. The toolbar says "STEREO SPEAKERS" (v1.0.67). Its dropdowns opened Nothing's
+  own popup (`nt_cust_drop_down_spinner`, the same one as Display > Dark theme > Schedule,
+  screenshot), over the row's title and only as wide as its longest entry, on Nothing's own
+  page too; moving that popup (v1.0.67) still left it a row low, or over its own row when it
+  opened upwards (screen recording), so the dropdowns are gone in the next build.
 
 **Not tested on a phone yet**
 - Next build: **Stereo in Nothing's Settings and Quick Settings** (both editions).
@@ -57,9 +59,9 @@ Magisk / KernelSU / APatch.
     Settings**: SettingsPage redirects the tile's launch to Settings' own SubSettings with a
     small allowed Sound page (MediaControlsSettings) as carrier and, once it has built
     itself, replaces its rows with Nothing's own widgets (NtCustSwitchPreferenceCompat,
-    NtCustDropDownPreference, PreferenceCategory): Earpiece speaker, Stereo, Earpiece and
+    Preference, PreferenceCategory): Earpiece speaker, Stereo, Earpiece and
     Speaker level, Speaker boost, Deep bass guard, Earpiece leveller, Earpiece limiter, and a
-    row that opens the app. Settings' androidx.preference names are obfuscated; the 22 it
+    row that opens the app. Settings' androidx.preference names are obfuscated; the 17 it
     uses were read from Settings 16.0.0 and checked against its bytecode (dexdump: all
     present, public, exact signatures), and are checked again when Settings starts: if one
     is missing, nothing is hooked and the row opens the app. State and changes go through the
@@ -69,18 +71,20 @@ Magisk / KernelSU / APatch.
     first bound while it has no value yet, and the page filled the values in a moment later.
     The page now ignores every change until the real state is shown, and a dropdown's
     "change" to the value it already holds.
-  - Fixed (seen on the phone, v1.0.65): the page's toolbar said "MEDIA". Settings'
-    PreferenceFragment copies the screen's own title to the activity in onResume, and the
-    carrier's screen is called "Media"; the page now names its screen "Stereo speakers"
-    when it builds, so Settings' own pass shows that title. Not seen on the phone yet.
-  - Next build: the page's dropdowns open as a card in line with their row. Still Nothing's
-    popup (its rounded background and text); only its place and width change, on this
-    page only: as wide as the row's text column, just below the row, or just above it when
-    there is no room below (Nothing's own placement stays if it fits neither way). Android
-    places that popup from the invisible Spinner's position on screen, transforms included,
-    and takes a width set before it opens (read from the phone's framework: Spinner
-    .DropdownPopup.computeContentWidth, PopupWindow.findDropDownPosition), so tapping a row
-    moves only that invisible Spinner. Compiled against Android 35; not seen on the phone yet.
+  - Fixed (seen on the phone, v1.0.65; the fix seen in v1.0.67): the page's toolbar said
+    "MEDIA". Settings' PreferenceFragment copies the screen's own title to the activity in
+    onResume, and the carrier's screen is called "Media"; the page names its screen
+    "Stereo speakers" when it builds, so Settings' own pass shows that title.
+  - Next build: **no more dropdowns**, the app's controls instead (SettingsControls), under
+    the row's summary in its text column: Earpiece level and Speaker level as 10 dots,
+    Speaker boost as 7 (Off, +1 … +6 dB), lit up to the level; Deep bass guard
+    (Off / Light / Medium / Strong) and Earpiece leveller (Off / Low / Mid / High) as pills,
+    the chosen one filled. One tap sets it; the summary still says the value. They take the
+    row's own font and Settings' colours (lit: its `preferenceCategoryTitleTextColor`, the
+    category titles' colour; rings: the summary colour), and are dimmed with their row when
+    it is off. The rows are plain Nothing rows (not tappable themselves); the control is
+    added after Settings binds the row (`Preference.o0`) and removed from a recycled row
+    first. Compiled against Android 35; not seen on the phone yet.
   - Live state, no root to look: the app keeps the last state it read (StateCache); every
     reading publishes it and, when something changed, notifies
     `content://<app>.settingstile/state` (the page listens and updates while open) and the
