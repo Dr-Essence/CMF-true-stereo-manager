@@ -112,18 +112,21 @@ Its levels map onto the module like this:
 - **Earpiece level** 10 = `Handset Volume` 0 (+8 dB, the receiver's maximum),
   each step 2 dB down to level 1 (−10 dB).
 - **Speaker level** (stereo only) 10 = `STEREO_ATTEN_DB` 6 dB, each step 2 dB
-  more down to level 1 (24 dB). It never goes below the 6 dB margin that
-  stands in for the speaker protection stereo turns off.
+  more down to level 1 (24 dB). It never goes below the 6 dB margin that,
+  with the module's protection, stands in for Awinic's in stereo.
 
 ## What it does (Pro)
 
 - **Channels: Mono / Stereo** — mono is stock audio (both drivers play the
   full mix, with Awinic speaker protection); stereo puts the left channel on
-  the earpiece and the right on the speaker. Shows what is running and what
-  is staged, warns before staging stereo, and offers a reboot when the two
-  differ. In stereo, sets the amp attenuation that stands in for Awinic's
-  protection (`STEREO_ATTEN_DB`). Needs module v0.9.0+; on older modules the
+  the earpiece and the right on the speaker. Switches at once (module v0.9.4+),
+  shows what is running and what is staged, warns before stereo, and offers a
+  reboot only when a live switch could not be done. In stereo, sets the amp
+  attenuation (`STEREO_ATTEN_DB`). Needs module v0.9.0+; on older modules the
   switch is hidden. How and why: the module's README, *Mono and stereo*.
+- **Protection** (stereo, module v1.0.4+): speaker boost, deep bass guard,
+  earpiece limiter, and the earpiece leveller (module v1.0.5+), with whether the
+  module's protection library runs
 - Arm / disarm the earpiece output
 - Earpiece gain slider in dB, −10 to +8 (`Handset Volume` 18 … 0; on this
   codec 0 is the loudest and 31 is mute — earlier versions had that the
