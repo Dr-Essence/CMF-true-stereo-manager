@@ -138,6 +138,9 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
     private fun build(fragment: Any, act: Activity) {
         val screen = XposedHelpers.callMethod(fragment, "getPreferenceScreen") ?: return
         removeAll.invoke(screen)
+        // The toolbar shows the screen's own title: Settings' PreferenceFragment
+        // copies it to the activity in onResume (the carrier's is "Media").
+        setTitle.invoke(screen, TITLE)
         val ctx = getContext.invoke(screen) as Context
         val rows = Rows(screen)
         var order = 0

@@ -40,6 +40,10 @@ Magisk / KernelSU / APatch.
 **Verified on the phone**
 - CMF Stereo (clean): NDot 77 JP Extended loads from the phone, the glow and dot levels
   render, earpiece and speaker levels read correctly, and the title sits below the status bar.
+- Stereo speakers page inside Nothing Settings (v1.0.65, screen recording): it opens inside
+  Settings with Nothing's own rows, shows the real state, and opening it no longer resets
+  anything. Its dropdowns open Nothing's own popup (`nt_cust_drop_down_spinner`, the same
+  one as Display > Dark theme > Schedule).
 
 **Not tested on a phone yet**
 - Next build: **Stereo in Nothing's Settings and Quick Settings** (both editions).
@@ -64,6 +68,10 @@ Magisk / KernelSU / APatch.
     first bound while it has no value yet, and the page filled the values in a moment later.
     The page now ignores every change until the real state is shown, and a dropdown's
     "change" to the value it already holds.
+  - Fixed (seen on the phone, v1.0.65): the page's toolbar said "MEDIA". Settings'
+    PreferenceFragment copies the screen's own title to the activity in onResume, and the
+    carrier's screen is called "Media"; the page now names its screen "Stereo speakers"
+    when it builds, so Settings' own pass shows that title. Not seen on the phone yet.
   - Live state, no root to look: the app keeps the last state it read (StateCache); every
     reading publishes it and, when something changed, notifies
     `content://<app>.settingstile/state` (the page listens and updates while open) and the
