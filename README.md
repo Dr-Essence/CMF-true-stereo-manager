@@ -64,8 +64,9 @@ Android 16, module v1.0.6)
 - The NOTHING OS UPDATED panel (only after a Nothing OS update, which this phone may not get).
 
 **Pending**
-- DRIVER STUDY's next run on the phone (the misalignment of the first run is fixed in the
-  app; its CSVs are needed to check it).
+- Nothing: the earpiece EQ was considered and left to the user's own equaliser (the earpiece
+  sounds good as it is). DRIVER STUDY's rerun, which was for that, is no longer needed; the
+  test stays in CMF L/R Test, its fixed alignment not yet run on the phone.
 
 **Fixed in v1.0.71** (since v1.0.60; details in CHANGELOG.md)
 - The Settings page reset every level and setting when opened.
