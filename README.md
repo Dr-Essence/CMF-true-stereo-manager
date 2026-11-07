@@ -34,7 +34,7 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.75** (both editions), signed with the permanent key (installs over
+**Current release: v1.0.76** (both editions), signed with the permanent key (installs over
 v1.0.35 and later). For module v1.0.6+ (protection, leveller, instant sync); older modules show
 fewer settings. The history of every build is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -67,6 +67,12 @@ Android 16, module v1.0.6)
 - Nothing: the earpiece EQ was considered and left to the user's own equaliser (the earpiece
   sounds good as it is). DRIVER STUDY's rerun, which was for that, is no longer needed; the
   test stays in CMF L/R Test, its fixed alignment not yet run on the phone.
+
+**Fixed in v1.0.76**
+- The icon's outer wave had a kink on each side; two of its dots moved one column out, so it
+  is a round arc around the speaker like the inner wave (icon and themed icon). Not seen on
+  the phone yet. Nothing Launcher Plus's live icon finds the waves by column (outer: 9-11,
+  9 dots), which still holds.
 
 **Fixed in v1.0.75**
 - Both apps, the Settings page and the Sound row said "earpiece left, speaker right"; left and
