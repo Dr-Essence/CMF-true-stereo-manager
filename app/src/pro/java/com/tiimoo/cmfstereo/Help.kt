@@ -17,14 +17,14 @@ object Help {
                 "It plays media through the earpiece as well as the bottom speaker, " +
                     "so both drivers are producing sound at once. In Mono (the default) " +
                     "both play the full mix: louder, fuller and taller than the single " +
-                    "bottom-firing speaker. In Stereo the earpiece plays the left " +
-                    "channel and the speaker the right.",
+                    "bottom-firing speaker. In Stereo the earpiece and the speaker play " +
+                    "left and right, following how you hold the phone.",
                 "overview intro what"
             ),
             HelpEntry(
                 "Mono or stereo",
                 "Mono is stock audio with Awinic's speaker protection. Stereo gives real " +
-                    "left/right (earpiece left, speaker right) by switching off the two " +
+                    "left/right (earpiece and speaker, following the screen) by switching off the two " +
                     "places the phone folds the speaker to mono, and replaces Awinic's " +
                     "protection on media with a fixed amp attenuation. Use Mono for loud " +
                     "listening. Switching restarts the audio HAL (a moment of silence) and falls back " +

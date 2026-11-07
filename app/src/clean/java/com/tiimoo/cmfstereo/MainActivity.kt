@@ -211,7 +211,7 @@ private fun Controls(
             Spacer(Modifier.height(12.dp))
             Body(
                 if (s.channelsStaged == "stereo")
-                    "Left from the earpiece, right from the bottom speaker. Turn the phone " +
+                    "Left and right from the earpiece and the bottom speaker. Turn the phone " +
                         "either way: left and right follow the screen."
                 else
                     "Both speakers play the same full sound, with full speaker protection. " +
@@ -320,7 +320,8 @@ private fun Controls(
         NothingDialog(
             ndot = ndot,
             title = "STEREO",
-            text = "Real left and right: earpiece left, speaker right.\n\n" +
+            text = "Real left and right from the earpiece and the speaker, following " +
+                "how you hold the phone.\n\n" +
                 "In stereo the speaker's automatic protection is off for music, so " +
                 "its level is held lower, and its deepest bass is held back when it " +
                 "gets loud. Use Mono for loud listening.\n\n" +

@@ -325,7 +325,7 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
                 !b.getBoolean("installed") -> "The CMF true stereo module is not installed"
                 b.getString("build") == "updated" -> "Not available on this Nothing OS version yet"
                 pending -> "Switches after a restart"
-                stereo -> "Earpiece left, speaker right"
+                stereo -> "Left and right follow the screen"
                 else -> "Both speakers play everything"
             })
         }

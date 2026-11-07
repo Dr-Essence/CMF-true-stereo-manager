@@ -34,8 +34,8 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.71** (both editions), signed with the permanent key (installs over
-v1.0.35 and later). For module v1.0.6 (protection, leveller, instant sync); older modules show
+**Current release: v1.0.75** (both editions), signed with the permanent key (installs over
+v1.0.35 and later). For module v1.0.6+ (protection, leveller, instant sync); older modules show
 fewer settings. The history of every build is in [CHANGELOG.md](CHANGELOG.md).
 
 **Verified on the phone** (CMF Phone 1 A015, Nothing OS 4.1 `Tetris-B4.1-260615-1652-EEA`,
@@ -67,6 +67,10 @@ Android 16, module v1.0.6)
 - Nothing: the earpiece EQ was considered and left to the user's own equaliser (the earpiece
   sounds good as it is). DRIVER STUDY's rerun, which was for that, is no longer needed; the
   test stays in CMF L/R Test, its fixed alignment not yet run on the phone.
+
+**Fixed in v1.0.75**
+- Both apps, the Settings page and the Sound row said "earpiece left, speaker right"; left and
+  right follow the screen (module v0.9.5+), and the texts now say so.
 
 **Fixed in v1.0.71** (since v1.0.60; details in CHANGELOG.md)
 - The Settings page reset every level and setting when opened.
@@ -119,8 +123,8 @@ Its levels map onto the module like this:
 ## What it does (Pro)
 
 - **Channels: Mono / Stereo** — mono is stock audio (both drivers play the
-  full mix, with Awinic speaker protection); stereo puts the left channel on
-  the earpiece and the right on the speaker. Switches at once (module v0.9.4+),
+  full mix, with Awinic speaker protection); stereo plays left and right on
+  the earpiece and the speaker, following the screen. Switches at once (module v0.9.4+),
   shows what is running and what is staged, warns before stereo, and offers a
   reboot only when a live switch could not be done. In stereo, sets the amp
   attenuation (`STEREO_ATTEN_DB`). Needs module v0.9.0+; on older modules the

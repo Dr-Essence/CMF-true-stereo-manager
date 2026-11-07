@@ -377,8 +377,8 @@ private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, ()
             }
             Text(
                 if (s.channelsStaged == "stereo")
-                    "Stereo: earpiece plays the left channel, speaker the right; swapped " +
-                        "when the phone is turned the other way (module v0.9.5+). Awinic's speaker " +
+                    "Stereo: the earpiece and the speaker play left and right, following how the " +
+                        "phone is held (module v0.9.5+). Awinic's speaker " +
                         "protection is off for media; the amp is held " +
                         "${s.stereoAttenDb} dB down instead, and the module's own protection " +
                         "(module v1.0.4+) holds the deep bass and the earpiece. Calls keep Awinic's."
