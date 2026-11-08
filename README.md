@@ -34,7 +34,7 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.79** (both editions), signed with the permanent key (installs over
+**Current release: v1.0.80** (both editions), signed with the permanent key (installs over
 v1.0.35 and later). For module v1.0.6+ (protection, leveller, instant sync); older modules show
 fewer settings. The history of every build is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -56,6 +56,22 @@ Android 16, module v1.0.6)
   driver recording; compressed audio is refused by the phone (offload not granted).
 
 **Not seen on the phone yet**
+- **v1.0.80, the "Stereo speakers" page in Settings search.** Typing a row's name (Earpiece
+  speaker, Stereo, Earpiece level, Speaker level, Speaker boost, Deep bass guard, Earpiece
+  leveller, Earpiece limiter) in Nothing's Settings search lists it, "Stereo speakers" under
+  it; a tap opens that page inside Settings. Read from Nothing's Settings Intelligence (the app
+  behind Settings search): it takes search providers protected by `READ_SEARCH_INDEXABLES`
+  from system apps only (`PreIndexDataCollector.isWellKnownProvider`), and makes each result's
+  intent in `IndexData$Builder.buildIntent`. The app has such a provider
+  (`nothing/SearchProvider.kt`, the rows from `nothing/SearchRows.kt`, which the page itself
+  now draws from too); in Settings Intelligence (`nothing/SearchHook.kt`) the check passes for
+  it, and its results go to Settings' own `SearchResultTrampoline` with the page's carrier
+  fragment and mark, which opens the page in Settings as a tap on the Sound row does. With both
+  editions installed only CMF Stereo is listed. Checked here: the shared code compiles (the
+  generated `R` aside), the real provider rows put title, summary, keywords, screen title and
+  key where Settings Intelligence reads them. Needs: Settings Intelligence
+  (`com.android.settings.intelligence`) ticked in the app's LSPosed scope and force-stopped once;
+  then a search for "bass guard" listing it and a tap opening the page.
 - The Quick Settings tiles' new names ("Stereo" / "Stereo Pro") and a tap on them.
 - The page updating by itself while open after a change made outside it (the app, stereoctl,
   the module switching to mono).
@@ -108,7 +124,8 @@ Android 16, module v1.0.6)
 The newest release is the stable one; earlier ones are kept as pre-releases for reference.
 Each release's own page has its notes, and [CHANGELOG.md](CHANGELOG.md) has every build.
 
-**v1.0.79** (8 Nov 2026): a bolder icon in Nothing's icon style; CMF L/R Test gets an NDot
+**v1.0.80** (8 Nov 2026): the Stereo speakers settings are findable in Settings search.
+**v1.0.79** (8 Nov): a bolder icon in Nothing's icon style; CMF L/R Test gets an NDot
 crash-test icon.
 **v1.0.76** (7 Nov): a rounder outer sound wave on the icon.
 **v1.0.75** (7 Nov): every text says left and right follow how you hold the phone.

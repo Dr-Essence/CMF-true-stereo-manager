@@ -254,24 +254,21 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
         fun pills(key: String, title: String, description: String, labels: List<String>, parent: Any, onPick: (String) -> Unit) =
             ctl(key, title, description, parent, Control(labels = labels, values = CHOICES, onPick = onPick))
 
-        val sound = cat("Speakers")
-        rows.armed = sw("cmf_armed", "Earpiece speaker", "Play through the earpiece as well as the bottom speaker", sound) { set(rows, act, "armed", if (it) "on" else "off") }
-        rows.stereo = sw("cmf_stereo", "Stereo", null, sound) { set(rows, act, "channels", if (it) "stereo" else "mono") }
-        val lv = cat("Levels")
-        rows.ear = dots("cmf_ear", "Earpiece level",
-            "10 is the loudest the earpiece goes. Turn it down if it ever buzzes", 1, 10, lv) { set(rows, act, "earLevel", it) }
-        rows.spk = dots("cmf_spk", "Speaker level",
-            "Balances the two sides: lower it until the earpiece is as clear as the speaker", 1, 10, lv) { set(rows, act, "spkLevel", it) }
+        // Titles and descriptions from SearchRows, which Settings search lists too.
+        val r = SearchRows
+        val sound = cat(r.armed.category)
+        rows.armed = sw(r.armed.key, r.armed.title, r.armed.summary, sound) { set(rows, act, "armed", if (it) "on" else "off") }
+        rows.stereo = sw(r.stereo.key, r.stereo.title, r.stereo.summary, sound) { set(rows, act, "channels", if (it) "stereo" else "mono") }
+        val lv = cat(r.ear.category)
+        rows.ear = dots(r.ear.key, r.ear.title, r.ear.summary!!, 1, 10, lv) { set(rows, act, "earLevel", it) }
+        rows.spk = dots(r.spk.key, r.spk.title, r.spk.summary!!, 1, 10, lv) { set(rows, act, "spkLevel", it) }
         rows.spkCat = lv
-        val prot = cat("Protection")
+        val prot = cat(r.boost.category)
         rows.protCat = prot
-        rows.boost = dots("cmf_boost", "Speaker boost",
-            "Louder speaker without more strain, +1 dB a dot. The first dot is off", 0, 6, prot) { set(rows, act, "boost", it) }
-        rows.bass = pills("cmf_bass", "Deep bass guard",
-            "Holds back only the deepest bass, and only when it gets loud enough to strain the speaker", BASS, prot) { set(rows, act, "bass", it) }
-        rows.leveller = pills("cmf_leveller", "Earpiece leveller",
-            "Brings up the earpiece's quiet parts so it keeps up with the speaker", LEVELLER, prot) { set(rows, act, "leveller", it) }
-        rows.limit = sw("cmf_limit", "Earpiece limiter", "Stops the earpiece crackling at its very loudest", prot) { set(rows, act, "limit", if (it) "on" else "off") }
+        rows.boost = dots(r.boost.key, r.boost.title, r.boost.summary!!, 0, 6, prot) { set(rows, act, "boost", it) }
+        rows.bass = pills(r.bass.key, r.bass.title, r.bass.summary!!, BASS, prot) { set(rows, act, "bass", it) }
+        rows.leveller = pills(r.leveller.key, r.leveller.title, r.leveller.summary!!, LEVELLER, prot) { set(rows, act, "leveller", it) }
+        rows.limit = sw(r.limit.key, r.limit.title, r.limit.summary, prot) { set(rows, act, "limit", if (it) "on" else "off") }
         val more = cat("More")
         place(newPref.newInstance(ctx), more).also { p ->
             setKey.invoke(p, "cmf_open"); setTitle.invoke(p, "CMF Stereo"); setSummary.invoke(p, "Open the app")
@@ -356,10 +353,10 @@ internal class SettingsPage private constructor(private val cl: ClassLoader) {
 
     companion object {
         private const val SETTINGS = "com.android.settings"
-        private const val CARRIER = "com.android.settings.sound.MediaControlsSettings"
+        internal const val CARRIER = "com.android.settings.sound.MediaControlsSettings"
         private const val ENTRY = "com.tiimoo.cmfstereo.nothing.SoundSettingsEntry"
-        private const val MARK = "cmf_stereo_page"
-        private const val TITLE = "Stereo speakers"
+        internal const val MARK = "cmf_stereo_page"
+        internal const val TITLE = "Stereo speakers"
         private const val CONTROL = "cmf_stereo_control"
         private val CHOICES = listOf("off", "light", "medium", "strong")
         private val BASS = listOf("Off", "Light", "Medium", "Strong")

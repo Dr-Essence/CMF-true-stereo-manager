@@ -10,8 +10,9 @@ import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 /**
- * LSPosed hook (scope: com.android.settings) that lets this app's own Settings
- * tile into Nothing's Sound screen.
+ * LSPosed hook (scope: com.android.settings, com.android.settings.intelligence) that lets
+ * this app's own Settings tile into Nothing's Sound screen, and its page into Settings search
+ * (SearchHook).
  *
  * Settings already supports tiles from other apps - an activity with the
  * action com.android.settings.action.EXTRA_SETTINGS and a category - and draws
@@ -28,6 +29,11 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage
  */
 class SettingsHook : IXposedHookLoadPackage {
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
+        if (lpparam.packageName == SEARCH) {
+            // Settings search: the page's rows, a result opening the page (SearchHook).
+            SearchHook.install(lpparam.classLoader)
+            return
+        }
         if (lpparam.packageName != SETTINGS) return
         try {
             val pm = XposedHelpers.findClass("android.app.ApplicationPackageManager", lpparam.classLoader)
@@ -55,6 +61,7 @@ class SettingsHook : IXposedHookLoadPackage {
 
     private companion object {
         const val SETTINGS = "com.android.settings"
+        const val SEARCH = "com.android.settings.intelligence"
         const val EXTRA_SETTINGS = "com.android.settings.action.EXTRA_SETTINGS"
     }
 }
