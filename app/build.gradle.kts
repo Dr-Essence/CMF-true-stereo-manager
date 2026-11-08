@@ -31,7 +31,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = gitCommitCount()
-        versionName = "1.0.${gitCommitCount()}"
+        versionName = "1.0.${gitCommitCount()}-beta"
     }
 
     // Two apps from one codebase, installable side by side:

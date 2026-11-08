@@ -34,7 +34,7 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.81** (both editions), signed with the permanent key (installs over
+**Current release: v1.0.95-beta** (both editions; versions are marked beta from now on), signed with the permanent key (installs over
 v1.0.35 and later). For module v1.0.6+ (protection, leveller, instant sync); older modules show
 fewer settings. The history of every build is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -121,6 +121,8 @@ Android 16, module v1.0.6)
 The newest release is the stable one; earlier ones are kept as pre-releases for reference.
 Each release's own page has its notes, and [CHANGELOG.md](CHANGELOG.md) has every build.
 
+**v1.0.95-beta** (8 Nov 2026): versions are marked beta from now on (the build number keeps rising,
+so it installs over v1.0.81); new banner.
 **v1.0.81** (8 Nov 2026): Settings search finds the stereo settings (v1.0.80 did not).
 **v1.0.80** (8 Nov): the Stereo speakers settings are findable in Settings search.
 **v1.0.79** (8 Nov): a bolder icon in Nothing's icon style; CMF L/R Test gets an NDot
