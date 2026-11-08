@@ -14,7 +14,12 @@ import de.robv.android.xposed.XposedHelpers
  * - `search.indexing.PreIndexDataCollector.isWellKnownProvider(ResolveInfo)` takes a search
  *   provider only if it is protected by `READ_SEARCH_INDEXABLES` and its app is a system app.
  *   It is answered true for [SearchProvider], the permission still required. With both
- *   editions installed only CMF Stereo is taken (the Pro's rows would be the same, twice).
+ *   editions offering the rows only CMF Stereo is taken (the Pro's would be the same, twice);
+ *   an edition without the provider (older than v1.0.80) does not count.
+ * - `search.indexing.IndexDatabaseHelper.buildProviderVersionedNames(Context, List)` is the
+ *   string compared with the last indexing; only a change reads the providers again. A marker
+ *   is added to it, so the first indexing with this hook reads the rows even if Settings
+ *   Intelligence indexed this version before the hook was on (v1.0.80 on the phone: no rows).
  * - `search.indexing.IndexData$Builder.buildIntent()` makes the intent a tap starts. For this
  *   app's rows it becomes Settings' own `SearchResultTrampoline` (exported, takes Settings
  *   Intelligence as its caller) with the page's carrier fragment, title and mark: the
@@ -28,6 +33,8 @@ internal object SearchHook {
     private const val CLEAN = "com.tiimoo.cmfstereo.clean"
     private const val PRO = "com.tiimoo.cmfstereo"
     private const val INDEXING = "com.android.settings.intelligence.search.indexing"
+    /** Added to the indexed-versions string; changing it makes Settings Intelligence read again. */
+    private const val MARKER = "cmf-search:1"
 
     fun install(cl: ClassLoader) {
         try {
@@ -40,8 +47,16 @@ internal object SearchHook {
                         if (pkg != CLEAN && pkg != PRO) return
                         if (info.authority != "$pkg.search" || info.readPermission != PERMISSION
                             || info.writePermission != PERMISSION) return
-                        if (pkg == PRO && installed(param.thisObject, CLEAN)) return
+                        if (pkg == PRO && offersRows(param.thisObject, CLEAN)) return
                         param.result = true
+                    }
+                })
+            XposedHelpers.findAndHookMethod("$INDEXING.IndexDatabaseHelper", cl,
+                "buildProviderVersionedNames", android.content.Context::class.java,
+                List::class.java, object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val names = param.result as? String ?: return
+                        param.result = "$names,$MARKER"
                     }
                 })
             val builder = XposedHelpers.findClass("$INDEXING.IndexData\$Builder", cl)
@@ -59,17 +74,16 @@ internal object SearchHook {
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             })
-            XposedBridge.log("CMF Stereo: settings search ready (2 hooks)")
+            XposedBridge.log("CMF Stereo: settings search ready (3 hooks)")
         } catch (t: Throwable) {
             XposedBridge.log("CMF Stereo: settings search not installed: $t")
         }
     }
 
-    /** Whether [pkg] is installed, seen from Settings Intelligence (it sees every app). */
-    private fun installed(collector: Any, pkg: String): Boolean = try {
+    /** Whether [pkg] is installed with its search rows (v1.0.80+), seen from Settings Intelligence. */
+    private fun offersRows(collector: Any, pkg: String): Boolean = try {
         val context = XposedHelpers.getObjectField(collector, "mContext") as android.content.Context
-        context.packageManager.getPackageInfo(pkg, 0)
-        true
+        context.packageManager.resolveContentProvider("$pkg.search", 0) != null
     } catch (t: Throwable) {
         false
     }

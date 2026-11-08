@@ -34,7 +34,7 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.80** (both editions), signed with the permanent key (installs over
+**Current release: v1.0.81** (both editions), signed with the permanent key (installs over
 v1.0.35 and later). For module v1.0.6+ (protection, leveller, instant sync); older modules show
 fewer settings. The history of every build is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -56,6 +56,15 @@ Android 16, module v1.0.6)
   driver recording; compressed audio is refused by the phone (offload not granted).
 
 **Not seen on the phone yet**
+- **v1.0.81, Settings search, fixed** (v1.0.80 on the phone: searches for stereo, earpiece,
+  speaker and bass guard found only the apps). Two holes, read from the code: Settings
+  Intelligence reads the providers again only when the string of indexed providers and
+  versions changes, so an indexing done before the hook was on left the rows out until the next
+  version; and with both editions installed the Pro was skipped whenever CMF Stereo was
+  installed, even an older one without the rows. The hook now adds a marker to that string
+  (`buildProviderVersionedNames`; the first indexing with the hook reads the rows), and the Pro
+  gives way only to an edition that has the search provider. LSPosed log: "settings search
+  ready (3 hooks)". Needs the same test as v1.0.80.
 - **v1.0.80, the "Stereo speakers" page in Settings search.** Typing a row's name (Earpiece
   speaker, Stereo, Earpiece level, Speaker level, Speaker boost, Deep bass guard, Earpiece
   leveller, Earpiece limiter) in Nothing's Settings search lists it, "Stereo speakers" under
@@ -124,7 +133,8 @@ Android 16, module v1.0.6)
 The newest release is the stable one; earlier ones are kept as pre-releases for reference.
 Each release's own page has its notes, and [CHANGELOG.md](CHANGELOG.md) has every build.
 
-**v1.0.80** (8 Nov 2026): the Stereo speakers settings are findable in Settings search.
+**v1.0.81** (8 Nov 2026): Settings search finds the stereo settings (v1.0.80 did not).
+**v1.0.80** (8 Nov): the Stereo speakers settings are findable in Settings search.
 **v1.0.79** (8 Nov): a bolder icon in Nothing's icon style; CMF L/R Test gets an NDot
 crash-test icon.
 **v1.0.76** (7 Nov): a rounder outer sound wave on the icon.
