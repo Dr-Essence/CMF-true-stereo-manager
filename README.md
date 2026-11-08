@@ -164,7 +164,7 @@ Both are built from this repo and install side by side:
 |---|---|---|
 | For | everyday listening | tuning and diagnosing |
 | Look | Nothing's design language: black, NDot type in glowing green | Material dark |
-| Controls | on/off, Mono/Stereo, earpiece and speaker level on a plain 1–10 scale, speaker boost, deep bass guard, earpiece leveller and limiter | everything below, in raw values |
+| Controls | on/off, Mono/Stereo, earpiece and speaker level on a plain 1–10 scale, speaker boost, deep bass guard, earpiece leveller and limiter | the same, in raw values, plus the Pro-only tools below |
 | Developer tools | none | mixer controls, diff, probe, sweep, logs, config files |
 
 The clean edition uses Nothing's own NDot font from the phone (it prefers
@@ -180,28 +180,40 @@ Its levels map onto the module like this:
   more down to level 1 (24 dB). It never goes below the 6 dB margin that,
   with the module's protection, stands in for Awinic's in stereo.
 
-## What it does (Pro)
+## What it does
 
-- **Channels: Mono / Stereo** — mono is stock audio (both drivers play the
+### In both editions
+
+- **Earpiece speaker on/off** (arm / disarm the earpiece output).
+- **Channels: Mono / Stereo**: mono is stock audio (both drivers play the
   full mix, with Awinic speaker protection); stereo plays left and right on
   the earpiece and the speaker, following the screen. Switches at once (module v0.9.4+),
-  shows what is running and what is staged, warns before stereo, and offers a
-  reboot only when a live switch could not be done. In stereo, sets the amp
-  attenuation (`STEREO_ATTEN_DB`). Needs module v0.9.0+; on older modules the
-  switch is hidden. How and why: the module's README, *Mono and stereo*.
+  warns before stereo, and offers a restart only when a live switch could not be
+  done. In stereo, sets the amp attenuation (`STEREO_ATTEN_DB`). Needs module
+  v0.9.0+; on older modules the switch is hidden. How and why: the module's
+  README, *Mono and stereo*.
+- **Earpiece and speaker levels**: a plain 1–10 scale in CMF Stereo (mapped as
+  above), the exact dB in Pro.
 - **Protection** (stereo, module v1.0.4+): speaker boost, deep bass guard,
-  earpiece limiter, and the earpiece leveller (module v1.0.5+), with whether the
-  module's protection library runs
-- Arm / disarm the earpiece output
-- Earpiece gain slider in dB, −10 to +8 (`Handset Volume` 18 … 0; on this
-  codec 0 is the loudest and 31 is mute — earlier versions had that the
-  wrong way round)
-- Mode: apply only while audio is playing, or always
-- **Solo** — speaker off, earpiece only, for auditioning
-- **Doctor** — diagnose why the earpiece is silent
-- Log, probe and report, with output shown in the app
+  earpiece limiter, and the earpiece leveller (module v1.0.5+).
+- **Quick Settings tile** (Mono / Stereo), and with LSPosed the **Stereo
+  speakers page inside Nothing Settings**, found by Settings search (see
+  *Nothing Settings and Quick Settings*).
 
-Everything it does is a call to the module's own `stereoctl`, or an edit to
+### Only in CMF Stereo Pro
+
+- What is running and what is staged, and whether the module's protection
+  library runs.
+- Earpiece gain slider in dB, −10 to +8 (`Handset Volume` 18 … 0; on this
+  codec 0 is the loudest and 31 is mute; earlier versions had that the
+  wrong way round).
+- Mode: apply only while audio is playing, or always.
+- **Solo**: speaker off, earpiece only, for auditioning.
+- **Doctor**: diagnose why the earpiece is silent.
+- Developer tools: mixer controls, diff, probe, sweep, log, report and the
+  config files, with their output shown in the app.
+
+Everything either edition does is a call to the module's own `stereoctl`, or an edit to
 `/data/adb/cmf-stereo/*.conf`. Nothing is duplicated — the module stays the
 source of truth, and the terminal keeps working exactly as before.
 
