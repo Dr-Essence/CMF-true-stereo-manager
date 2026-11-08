@@ -56,11 +56,9 @@ Android 16, module v1.0.6)
   driver recording; compressed audio is refused by the phone (offload not granted).
 - Settings search (v1.0.81): searching stereo, earpiece, speaker or bass guard in Nothing's
   Settings lists the "Stereo speakers" rows (v1.0.80 found only the apps; see Fixed in
-  v1.0.81).
+  v1.0.81), and a tap on a result opens the "Stereo speakers" page inside Settings.
 
 **Not seen on the phone yet**
-- Tapping a Settings search result opening the "Stereo speakers" page inside Settings (the
-  results showing up is verified; the tap not reported yet).
 - The Quick Settings tiles' new names ("Stereo" / "Stereo Pro") and a tap on them.
 - The page updating by itself while open after a change made outside it (the app, stereoctl,
   the module switching to mono).
