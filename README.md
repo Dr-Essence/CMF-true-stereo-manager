@@ -54,33 +54,13 @@ Android 16, module v1.0.6)
   CHANGELOG, v1.0.63).
 - CMF L/R Test: MUSIC, MOVIE, GAME, SPEECH, MOVIE + EFFECT, AAudio (both), float and the
   driver recording; compressed audio is refused by the phone (offload not granted).
+- Settings search (v1.0.81): searching stereo, earpiece, speaker or bass guard in Nothing's
+  Settings lists the "Stereo speakers" rows (v1.0.80 found only the apps; see Fixed in
+  v1.0.81).
 
 **Not seen on the phone yet**
-- **v1.0.81, Settings search, fixed** (v1.0.80 on the phone: searches for stereo, earpiece,
-  speaker and bass guard found only the apps). Two holes, read from the code: Settings
-  Intelligence reads the providers again only when the string of indexed providers and
-  versions changes, so an indexing done before the hook was on left the rows out until the next
-  version; and with both editions installed the Pro was skipped whenever CMF Stereo was
-  installed, even an older one without the rows. The hook now adds a marker to that string
-  (`buildProviderVersionedNames`; the first indexing with the hook reads the rows), and the Pro
-  gives way only to an edition that has the search provider. LSPosed log: "settings search
-  ready (3 hooks)". Needs the same test as v1.0.80.
-- **v1.0.80, the "Stereo speakers" page in Settings search.** Typing a row's name (Earpiece
-  speaker, Stereo, Earpiece level, Speaker level, Speaker boost, Deep bass guard, Earpiece
-  leveller, Earpiece limiter) in Nothing's Settings search lists it, "Stereo speakers" under
-  it; a tap opens that page inside Settings. Read from Nothing's Settings Intelligence (the app
-  behind Settings search): it takes search providers protected by `READ_SEARCH_INDEXABLES`
-  from system apps only (`PreIndexDataCollector.isWellKnownProvider`), and makes each result's
-  intent in `IndexData$Builder.buildIntent`. The app has such a provider
-  (`nothing/SearchProvider.kt`, the rows from `nothing/SearchRows.kt`, which the page itself
-  now draws from too); in Settings Intelligence (`nothing/SearchHook.kt`) the check passes for
-  it, and its results go to Settings' own `SearchResultTrampoline` with the page's carrier
-  fragment and mark, which opens the page in Settings as a tap on the Sound row does. With both
-  editions installed only CMF Stereo is listed. Checked here: the shared code compiles (the
-  generated `R` aside), the real provider rows put title, summary, keywords, screen title and
-  key where Settings Intelligence reads them. Needs: Settings Intelligence
-  (`com.android.settings.intelligence`) ticked in the app's LSPosed scope and force-stopped once;
-  then a search for "bass guard" listing it and a tap opening the page.
+- Tapping a Settings search result opening the "Stereo speakers" page inside Settings (the
+  results showing up is verified; the tap not reported yet).
 - The Quick Settings tiles' new names ("Stereo" / "Stereo Pro") and a tap on them.
 - The page updating by itself while open after a change made outside it (the app, stereoctl,
   the module switching to mono).
@@ -92,6 +72,16 @@ Android 16, module v1.0.6)
 - Nothing: the earpiece EQ was considered and left to the user's own equaliser (the earpiece
   sounds good as it is). DRIVER STUDY's rerun, which was for that, is no longer needed; the
   test stays in CMF L/R Test, its fixed alignment not yet run on the phone.
+
+**Fixed in v1.0.81**
+- Settings search found none of the page's rows with v1.0.80 (seen on the phone). Settings
+  Intelligence re-reads search providers only when its string of indexed providers and versions
+  changes (`IndexDatabaseHelper.buildProviderVersionedNames`), so an indexing done before the
+  LSPosed hook was on skipped the rows until the next version; and with both editions installed
+  the Pro was skipped whenever CMF Stereo was installed, even an older one without the rows.
+  The hook adds a marker to that string, and the Pro gives way only to an edition with the
+  search provider. The rows of v1.0.80 (`nothing/SearchProvider.kt`, `SearchRows.kt`,
+  `SearchHook.kt`) are otherwise unchanged.
 
 **Fixed in v1.0.79**
 - The themed icon (Nothing Launcher's "Nothing" icon style) looked small and grey next to
