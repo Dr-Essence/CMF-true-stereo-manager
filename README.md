@@ -34,7 +34,7 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.95-beta** (both editions; versions are marked beta from now on), signed with the permanent key (installs over
+**Current release: v1.0.97-beta** (both editions; versions are marked beta from now on), signed with the permanent key (installs over
 v1.0.35 and later). For module v1.0.6+ (protection, leveller, instant sync); older modules show
 fewer settings. The history of every build is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -59,6 +59,12 @@ Android 16, module v1.0.6)
   v1.0.81), and a tap on a result opens the "Stereo speakers" page inside Settings.
 
 **Not seen on the phone yet**
+- **v1.0.97-beta, Pro warns before lowering the speaker's margin.** Stereo attenuation under 6 dB
+  (the margin CMF Stereo never goes below) now asks first, and a red line under the field
+  says what is at stake: with the module's protection running, its limiter still holds the
+  speaker's peaks but Awinic's thermal protection is off in stereo; without it (after a live
+  switch from a mono boot, until a reboot) only the amp's own cut-outs protect the speaker.
+  Not compiled here (the Compose libraries are not cached in this environment); CI builds it.
 - The Quick Settings tiles' new names ("Stereo" / "Stereo Pro") and a tap on them.
 - The page updating by itself while open after a change made outside it (the app, stereoctl,
   the module switching to mono).
@@ -121,6 +127,7 @@ Android 16, module v1.0.6)
 The newest release is the stable one; earlier ones are kept as pre-releases for reference.
 Each release's own page has its notes, and [CHANGELOG.md](CHANGELOG.md) has every build.
 
+**v1.0.97-beta** (8 Nov 2026): Pro warns before setting the speaker's stereo margin under 6 dB.
 **v1.0.95-beta** (8 Nov 2026): versions are marked beta from now on (the build number keeps rising,
 so it installs over v1.0.81); new banner.
 **v1.0.81** (8 Nov 2026): Settings search finds the stereo settings (v1.0.80 did not).

@@ -352,11 +352,16 @@ private fun ControlTab(
     }
 }
 
+/** The stereo attenuation CMF Stereo never goes below (the module's default margin). */
+private const val SAFE_ATTEN_DB = 6
+
 @Composable
 private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, () -> String) -> Unit) {
     var confirmStereo by remember { mutableStateOf(false) }
     var confirmReboot by remember { mutableStateOf(false) }
     var atten by remember(s.stereoAttenDb) { mutableStateOf(s.stereoAttenDb) }
+    /** An attenuation under the 6 dB margin, waiting for the user to confirm it. */
+    var confirmLowAtten by remember { mutableStateOf<Int?>(null) }
     val pending = s.channels != s.channelsStaged
 
     Card {
@@ -408,7 +413,12 @@ private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, ()
                         enabled = !busy
                     )
                     Button(
-                        onClick = { action("attenuation") { StereoCtl.setStereoAtten(atten.toIntOrNull() ?: 6) } },
+                        onClick = {
+                            val db = atten.toIntOrNull() ?: 6
+                            // Under the 6 dB margin only after a warning (CMF Stereo never goes there).
+                            if (db < SAFE_ATTEN_DB) confirmLowAtten = db
+                            else action("attenuation") { StereoCtl.setStereoAtten(db) }
+                        },
                         enabled = !busy && atten.isNotBlank()
                     ) { Text("Set") }
                 }
@@ -418,6 +428,18 @@ private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, ()
                         "play loud; use Mono for loud listening.",
                     style = MaterialTheme.typography.bodySmall
                 )
+                if ((atten.toIntOrNull() ?: SAFE_ATTEN_DB) < SAFE_ATTEN_DB) {
+                    Text(
+                        if (s.protRunning)
+                            "Under 6 dB the speaker is held only by the module's protection " +
+                                "(its peak limiter). Risky for long loud listening."
+                        else
+                            "DANGER: the module's protection is not running, so under 6 dB " +
+                                "nothing but the amp's own cut-outs protects the speaker.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
 
             if (s.supportsProtect && s.channelsStaged == "stereo") {
@@ -517,6 +539,39 @@ private fun ChannelsCard(s: StereoCtl.Status, busy: Boolean, action: (String, ()
                 }) { Text("Switch to stereo") }
             },
             dismissButton = { TextButton(onClick = { confirmStereo = false }) { Text("Cancel") } }
+        )
+    }
+
+    confirmLowAtten?.let { db ->
+        AlertDialog(
+            onDismissRequest = { confirmLowAtten = null },
+            title = { Text(if (s.protRunning) "Lower the speaker's margin?" else "Speaker unprotected") },
+            text = {
+                Text(
+                    "In stereo, Awinic's speaker protection is off for media. The 6 dB " +
+                        "attenuation is the margin that stands in for it; CMF Stereo never " +
+                        "goes below it.\n\n" +
+                        (if (s.protRunning)
+                            "The module's protection is running: its limiter still holds the " +
+                                "speaker's peaks where Awinic would in mono. But Awinic's " +
+                                "thermal protection is off in stereo, so long loud listening " +
+                                "at $db dB can overheat and damage the speaker."
+                        else
+                            "The module's protection is NOT running (after a live switch " +
+                                "from a mono boot it only starts after a reboot). At $db dB " +
+                                "only the amp's hardware cut-outs protect the speaker: loud " +
+                                "audio can damage it. Reboot in stereo first, or keep 6 dB " +
+                                "or more.") +
+                        "\n\nBack off at the first distortion; use Mono for loud listening."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmLowAtten = null
+                    action("attenuation") { StereoCtl.setStereoAtten(db) }
+                }) { Text("Set $db dB anyway", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { confirmLowAtten = null }) { Text("Cancel") } }
         )
     }
 
