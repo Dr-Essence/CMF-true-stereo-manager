@@ -71,7 +71,7 @@ Android 16, module v1.0.6)
 **Fixed in v1.0.76**
 - The icon's outer wave had a kink on each side; two of its dots moved one column out, so it
   is a round arc around the speaker like the inner wave (icon and themed icon). Not seen on
-  the phone yet. Nothing Launcher Plus's live icon finds the waves by column (outer: 9-11,
+  the phone yet. Nothing2Something's (formerly Nothing Launcher+) live icon finds the waves by column (outer: 9-11,
   9 dots), which still holds.
 
 **Fixed in v1.0.75**
