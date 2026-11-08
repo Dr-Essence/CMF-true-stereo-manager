@@ -1,0 +1,54 @@
+{
+ "CMF Stereo main screen in Mono, earpiece on: title CMF STEREO, status line ON · IDLE · MONO, EARPIECE SPEAKER, SOUND with MONO selected, EARPIECE LEVEL": {
+  "file": "mono.png",
+  "caption": "The main screen in Mono: only the earpiece switch, Sound and the earpiece level."
+ },
+ "CMF Stereo main screen in Stereo, scrolled to show SPEAKER LEVEL, SPEAKER BOOST, DEEP BASS GUARD, EARPIECE LEVELLER and EARPIECE LIMITER panels": {
+  "file": "stereo_scrolled.png",
+  "caption": "Stereo, scrolled down: speaker level, boost, deep bass guard, leveller and limiter."
+ },
+ "CMF Stereo STEREO confirmation dialog with SWITCH and CANCEL buttons": {
+  "file": "stereo_dialog.png",
+  "caption": "Tapping STEREO asks first: SWITCH or CANCEL."
+ },
+ "CMF Stereo EARPIECE LEVEL panel at level 10, all ten dots lit, large glowing 10": {
+  "file": "ear10.png",
+  "caption": "Earpiece level at 10, the loudest the earpiece goes."
+ },
+ "CMF Stereo DEEP BASS GUARD panel with MID selected, EARPIECE LEVELLER panel with OFF selected, and EARPIECE LIMITER switch on": {
+  "file": "protection.png",
+  "caption": "Deep bass guard at MID, earpiece leveller at HIGH, the limiter on."
+ },
+ "CMF L/R Test main screen: intro text and the buttons MUSIC, MOVIE, MOVIE + EFFECT, GAME, SPEECH, AAUDIO (GAME, LOW LATENCY), AAUDIO SHARED, FLOAT, COMPRESSED (OFFLOAD)": {
+  "file": "lrtest.png",
+  "caption": "CMF L/R Test: each button plays a left-only beep in one of Dirac's tunings."
+ },
+ "CMF Stereo Pro Speaker tab, top: top bar with Refresh, tab row Speaker / Settings / Developer / Guide, and the Status card": {
+  "file": "pro_status.png",
+  "caption": "Pro, Speaker tab: the Status card."
+ },
+ "CMF Stereo Pro Channels card in Stereo: Mono/Stereo segmented button, explanation text, Stereo attenuation (dB) field with Set, and the Protection block": {
+  "file": "pro_channels.png",
+  "caption": "The Channels card in Stereo, here with the attenuation raised to 14 dB, and the Protection block."
+ },
+ "CMF Stereo Pro Earpiece output card: switch, Mode (While playing / Always on), Everyday buttons Solo / Un-solo / Doctor, Earpiece gain slider": {
+  "file": "pro_earpiece.png",
+  "caption": "The Earpiece output card: switch, Mode, Solo / Un-solo / Doctor and the earpiece gain."
+ },
+ "CMF Stereo Pro Settings tab: Daemon card (Apply, Revert, Restart, Poll interval, Guard, Log level) and the Danger zone card": {
+  "file": "pro_settings.png",
+  "caption": "The Settings tab: the Daemon card and the Danger zone."
+ },
+ "CMF Stereo Pro Developer tab: Gain sweep card with From / To / Sec fields and Start sweep, and the Mixer control card": {
+  "file": "pro_dev.png",
+  "caption": "The Developer tab: Gain sweep and Mixer control."
+ },
+ "CMF Stereo Pro Developer tab, lower cards: Hardware dump, Run any stereoctl command, Config files and Output": {
+  "file": "pro_dev2.png",
+  "caption": "Further down: Hardware dump, any stereoctl command, the config files and the Output card."
+ },
+ "CMF Stereo Pro Guide tab with a search for doctor and the matching entries opened": {
+  "file": "pro_guide.png",
+  "caption": "The Guide tab: every entry opens with Show."
+ }
+}

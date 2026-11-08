@@ -38,6 +38,10 @@ Magisk / KernelSU / APatch.
 v1.0.35 and later). For module v1.0.6+ (protection, leveller, instant sync); older modules show
 fewer settings. The history of every build is in [CHANGELOG.md](CHANGELOG.md).
 
+**Instruction manual (early beta):** `CMF-Stereo-Manual.pdf`, attached to the latest release,
+covers both editions and CMF L/R Test screen by screen (source in [docs/manual](docs/manual)).
+It is still being written: some screenshots are still placeholders.
+
 **Verified on the phone** (CMF Phone 1 A015, Nothing OS 4.1 `Tetris-B4.1-260615-1652-EEA`,
 Android 16, module v1.0.6)
 - Both editions: on/off, Mono/Stereo switching live, earpiece and speaker level; the clean
