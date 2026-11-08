@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/Dr-Essence/CMF-true-stereo-manager/main/docs/banner.png" alt="CMF Stereo manager" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Dr-Essence/CMF-true-stereo-manager/main/docs/banner.png" alt="CMF Stereo" width="100%"></p>
 
 # CMF-true-stereo-manager
 
