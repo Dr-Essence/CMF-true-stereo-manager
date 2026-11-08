@@ -91,6 +91,29 @@ Android 16, module v1.0.6)
 
 ---
 
+## Changelog
+
+The newest release is the stable one; earlier ones are kept as pre-releases for reference.
+Each release's own page has its notes, and [CHANGELOG.md](CHANGELOG.md) has every build.
+
+**v1.0.76** (7 Nov 2026): a rounder outer sound wave on the icon.
+**v1.0.75** (7 Nov): every text says left and right follow how you hold the phone.
+**v1.0.71** (6 Nov): Stereo in Nothing Settings (optional, LSPosed), Quick Settings tile,
+changes shown everywhere at once without root, installs on internal storage.
+**v1.0.60** (5 Nov): earpiece leveller setting (module v1.0.5).
+**v1.0.56** (5 Nov): stereo protection settings: speaker boost, deep bass guard, earpiece
+limiter (module v1.0.4).
+**v1.0.53** (5 Nov): both speakers in games (module v1.0.3); a notice after a Nothing OS
+update.
+**v1.0.39** (4 Nov): new dot-matrix icon, animated with Nothing2Something; licence CC BY-NC-SA
+4.0.
+**v1.0.35** (4 Nov): a permanent signing key, so updates install over the previous version;
+instant Mono/Stereo switch; left and right follow the screen.
+**v1.0.29** (4 Nov): about 1 MB instead of about 100 MB, and faster.
+**v1.0.25** (4 Nov): two editions, CMF Stereo and CMF Stereo Pro; Mono/Stereo switch; the
+earpiece at its real maximum; speaker level; Nothing's NDot font.
+**v1.0.21** (3 Nov): the first build of the two editions.
+
 ## About
 
 A small root app for controlling the
