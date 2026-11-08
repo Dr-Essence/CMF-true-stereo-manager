@@ -34,7 +34,7 @@ Magisk / KernelSU / APatch.
 
 ## Status
 
-**Current release: v1.0.76** (both editions), signed with the permanent key (installs over
+**Current release: v1.0.79** (both editions), signed with the permanent key (installs over
 v1.0.35 and later). For module v1.0.6+ (protection, leveller, instant sync); older modules show
 fewer settings. The history of every build is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -68,6 +68,18 @@ Android 16, module v1.0.6)
   sounds good as it is). DRIVER STUDY's rerun, which was for that, is no longer needed; the
   test stays in CMF L/R Test, its fixed alignment not yet run on the phone.
 
+**Fixed in v1.0.79**
+- The themed icon (Nothing Launcher's "Nothing" icon style) looked small and grey next to
+  Nothing's own glyphs (screenshot): the launcher draws an app's monochrome layer at about
+  0.58 of its coloured icon. The monochrome layer is now 1.3x larger with bolder dots (radius
+  2.0 instead of 1.37); the coloured icon is unchanged. Not seen on the phone yet.
+- CMF L/R Test had Android's default icon. It now has an NDot crash-test target: yellow and
+  black quarters on the dot grid (the black ones as unlit grey dots), with a themed layer.
+  Not seen on the phone yet.
+- Seen on the phone: CMF Stereo Pro still showed v1.0.75's kinked outer wave; that phone's
+  Pro app was older than v1.0.76 (both editions are built from the same icon). Updating
+  Pro gives it the round wave.
+
 **Fixed in v1.0.76**
 - The icon's outer wave had a kink on each side; two of its dots moved one column out, so it
   is a round arc around the speaker like the inner wave (icon and themed icon). Not seen on
@@ -96,7 +108,9 @@ Android 16, module v1.0.6)
 The newest release is the stable one; earlier ones are kept as pre-releases for reference.
 Each release's own page has its notes, and [CHANGELOG.md](CHANGELOG.md) has every build.
 
-**v1.0.76** (7 Nov 2026): a rounder outer sound wave on the icon.
+**v1.0.79** (8 Nov 2026): a bolder icon in Nothing's icon style; CMF L/R Test gets an NDot
+crash-test icon.
+**v1.0.76** (7 Nov): a rounder outer sound wave on the icon.
 **v1.0.75** (7 Nov): every text says left and right follow how you hold the phone.
 **v1.0.71** (6 Nov): Stereo in Nothing Settings (optional, LSPosed), Quick Settings tile,
 changes shown everywhere at once without root, installs on internal storage.
