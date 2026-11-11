@@ -66,9 +66,9 @@ jobs:
             VER=$(grep -m1 versionName $DIR/output-metadata.json | cut -d'"' -f4 || echo unknown)
             cp $DIR/app-$ED-release.apk "out/CMF-true-stereo-$ED-v${VER}-${SHA}.apk"
           done
-          # The left/right test app: a developer tool, never published. It goes to its
-          # own folder, which only the "lr-test" artifact below uploads (the releases
-          # upload out/ only).
+          # The left/right test app: its own folder, uploaded as the "lr-test" artifact,
+          # and attached to tagged releases only (shipped with an app update), never
+          # to the rolling "Latest build" (which uploads out/ only).
           mkdir -p test-out
           cp modetest/build/outputs/apk/release/modetest-release.apk "test-out/CMF-LR-test-${SHA}.apk"
           echo "VER=$VER" >> "$GITHUB_ENV"
@@ -135,4 +135,6 @@ jobs:
           # docs/releases/v<version>.md when it exists (the Release notes
           # workflow keeps it in sync afterwards), else the generic text.
           body_path: ${{ env.NOTES }}
-          files: out/*.apk
+          files: |
+            out/*.apk
+            test-out/*.apk
