@@ -60,6 +60,12 @@ class MainActivity : Activity() {
             textSize = 16f
             setOnClickListener { startActivity(Intent(this@MainActivity, StudyActivity::class.java)) }
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 64 })
+        // RESPONSE STUDY: every frequency of each driver, for the EQ (SweepActivity).
+        col.addView(Button(this).apply {
+            text = "RESPONSE STUDY (about 1 min, phone flat on a table)"
+            textSize = 16f
+            setOnClickListener { startActivity(Intent(this@MainActivity, SweepActivity::class.java)) }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 32 })
         // SYNC TEST: do the earpiece and the speaker play at the same moment? (SyncActivity)
         col.addView(Button(this).apply {
             text = "SYNC TEST (about 15 s, phone flat on a table)"

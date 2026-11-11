@@ -63,6 +63,18 @@ Android 16, module v1.0.6)
   v1.0.81), and a tap on a result opens the "Stereo speakers" page inside Settings.
 
 **Not seen on the phone yet**
+- **CMF L/R Test: RESPONSE STUDY** (new, for the EQ; Dr.Essence: "measure every single
+  detail and every frequency"; the EQ must stay clean and never change the frequencies in the
+  music). Each driver alone, in Stereo, upright, media volume at maximum: an exponential sine
+  sweep 20 Hz-20 kHz, 6 s, at -24 and -12 dBFS (under the earpiece limiter's -2.5 and the
+  speaker's 6 dB attenuation). Recorded at once: the microphones, the HAL's own recordings
+  (what reached it: the sweep after Android's effects, Dirac's speaker tuning among them, which
+  the driver study found adds +5 to +6 dB at 200-500 Hz and a second harmonic at 100 Hz), the
+  audio DSP's input and output, and the microphones' raw capture inside the HAL; plus plan.txt
+  (every sweep's start, channel and level) and notes.txt (the module's settings). Packed into
+  /sdcard/cmf-sweep.tgz; the analysis (frequency response and harmonic distortion at every
+  frequency, Farina's deconvolution; Dirac's curve; each driver's) is done from the files.
+  Compiled; not run on the phone yet. Pending: Dr.Essence's run and its analysis, then the EQ.
 - **SYNC TEST, second version, and the first result from the phone: in step.** Dr.Essence's
   run said "the earpiece is 60 ms late"; his recording shows otherwise. By hand: 18 pairs, the
   earpiece-to-speaker gap 249.48 ms every time (spread 0.00 ms) against 250 played, the 0.52 ms
