@@ -26,7 +26,6 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
-import kotlin.math.sqrt
 
 /**
  * SYNC TEST: do the earpiece (left) and the bottom speaker (right) play at the same moment?
@@ -40,10 +39,11 @@ import kotlin.math.sqrt
  * is the earpiece and right the speaker, as in the driver study). One stereo stream plays
  * [PAIRS] pairs of short clicks: a click on the left, then one on the right exactly [GAP_MS]
  * later, in the same buffer, so any extra delay of one driver changes the measured gap. Both
- * microphones record (UNPROCESSED where the phone has it). In each microphone the moment each
- * click arrives is found (where the click's envelope first reaches 30% of its peak, so a
- * quieter driver is timed the same way); offset = measured gap - [GAP_MS]: positive means the
- * speaker is late, negative the earpiece.
+ * microphones record (UNPROCESSED where the phone has it). The timing is [SyncAnalysis]
+ * (plain Kotlin, unit-tested on made-up recordings and on Dr.Essence's first one): offset =
+ * measured gap - [GAP_MS]; positive means the speaker is late, negative the earpiece. On his
+ * phone the input was one microphone on both channels (VOICE_RECOGNITION), so the distance
+ * below is not cancelled there; the result says so.
  *
  * The microphones are not halfway between the drivers: the bottom one is nearer the speaker,
  * the top one nearer the earpiece, so each sees a small offset from distance alone (sound
@@ -152,6 +152,7 @@ class SyncActivity : Activity() {
         val rec = AudioRecord(src, RATE, AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, max(minBuf, RATE))
         val mic = ShortArray((total + RATE * 3) * 2)
         var micN = 0
+        var playFrame = RATE * 8 / 10
         val recording = java.util.concurrent.atomic.AtomicBoolean(true)
         val track = AudioTrack.Builder()
             .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
@@ -187,6 +188,7 @@ class SyncActivity : Activity() {
             }.also { it.start() }
             Thread.sleep(800) // room noise, before anything plays
             say("Playing the clicks: do not touch the phone.")
+            playFrame = micN / 2 // clicks are looked for only after this (SyncAnalysis)
             track.play()
             var pos = 0
             while (pos < total) {
@@ -213,25 +215,36 @@ class SyncActivity : Activity() {
             report.append("Stereo is not on: both drivers play every click, so this cannot tell " +
                 "them apart. Turn Stereo on and run it again.\n\n")
         }
-        val means = ArrayList<Double>()
-        for (ch in 0 until 2) {
-            val offsets = offsets(mic, frames, ch, pairFrames, gapFrames)
-            val name = if (ch == 0) "Microphone 1" else "Microphone 2"
-            if (offsets.size < PAIRS / 2) {
-                report.append("$name: only ${offsets.size} of $PAIRS pairs heard clearly; " +
-                    "louder volume or a quieter room.\n")
-                continue
-            }
-            val mean = offsets.average()
-            val sd = sqrt(offsets.sumOf { (it - mean) * (it - mean) } / offsets.size)
-            means += mean
-            report.append("$name: ${offsets.size} pairs, offset ${"%+.2f".format(mean)} ms " +
-                "(spread ${"%.2f".format(sd)} ms, ${"%+.2f".format(offsets.min())} to " +
-                "${"%+.2f".format(offsets.max())})\n")
+        val channels = Array(2) { ch -> DoubleArray(frames) { mic[it * 2 + ch].toDouble() } }
+        val single = SyncAnalysis.sameMicrophone(channels[0], channels[1])
+        val results = (if (single) listOf(0) else listOf(0, 1)).map { ch ->
+            SyncAnalysis.offsets(SyncAnalysis.envelope(channels[ch], RATE), RATE, quietUntil = playFrame,
+                from = playFrame + RATE * 3 / 10, pairs = PAIRS, pairFrames = pairFrames,
+                gapFrames = gapFrames, searchFrames = RATE * SEARCH_MS / 1000)
         }
-        if (means.size == 2) {
+        val means = ArrayList<Double>()
+        results.forEachIndexed { k, res ->
+            val name = if (single) "Microphone" else "Microphone ${k + 1}"
+            if (res.offsets.size < PAIRS / 2) {
+                report.append("$name: only ${res.offsets.size} of $PAIRS pairs heard clearly; " +
+                    "louder volume or a quieter room.\n")
+                return@forEachIndexed
+            }
+            means += res.mean
+            report.append("$name: ${res.offsets.size} pairs, offset ${"%+.2f".format(res.mean)} ms " +
+                "(spread ${"%.2f".format(res.spread)} ms, ${"%+.2f".format(res.offsets.min())} to " +
+                "${"%+.2f".format(res.offsets.max())})" +
+                (if (res.dropped > 0) ", ${res.dropped} misread pair(s) left out" else "") + "\n")
+        }
+        if (means.size == results.size && means.isNotEmpty()) {
             val both = means.average()
-            report.append("\nBoth microphones (distance mostly cancelled): ${"%+.2f".format(both)} ms\n")
+            if (single) {
+                report.append("\nThe phone gave one microphone (the same sound on both channels), " +
+                    "so its distance to each driver is not cancelled: the earpiece is about 15 cm " +
+                    "farther from the bottom microphone, about -0.45 ms of this offset.\n")
+            } else {
+                report.append("\nBoth microphones (distance mostly cancelled): ${"%+.2f".format(both)} ms\n")
+            }
             report.append(when {
                 abs(both) < 1.0 -> "In step: under 1 ms apart, below what ears can hear."
                 abs(both) < 5.0 -> "Close: ${"%.1f".format(abs(both))} ms apart; hard to hear, worth noting."
@@ -248,60 +261,6 @@ class SyncActivity : Activity() {
         report.append(if (copied.contains("ok")) "\nSaved: /sdcard/cmf-sync.txt and cmf-sync.wav"
             else "\nSaved in ${dir.path} (no root to copy to /sdcard)")
         return report.toString()
-    }
-
-    /**
-     * Each pair's offset in milliseconds, from one microphone channel: the measured time from
-     * its left click to its right click, minus the gap they were played with.
-     */
-    private fun offsets(mic: ShortArray, frames: Int, ch: Int, pairFrames: Int, gapFrames: Int): List<Double> {
-        // A high-pass (the clicks are at 3 kHz, room rumble is low) and the size of each sample.
-        val env = DoubleArray(frames)
-        var prevX = 0.0
-        var prevY = 0.0
-        for (i in 0 until frames) {
-            val x = mic[i * 2 + ch].toDouble()
-            val y = 0.95 * (prevY + x - prevX)
-            prevX = x; prevY = y
-            env[i] = abs(y)
-        }
-        // Smoothed over a quarter of a millisecond, so one cycle does not decide the onset.
-        val smooth = DoubleArray(frames)
-        val w = RATE / 4000
-        var acc = 0.0
-        for (i in 0 until frames) {
-            acc += env[i]
-            if (i >= w) acc -= env[i - w]
-            smooth[i] = acc / w
-        }
-        val quiet = RATE * 7 / 10
-        val noise = sqrt((0 until quiet).sumOf { smooth[it] * smooth[it] } / quiet)
-        val search = RATE * SEARCH_MS / 1000
-        // The first click (a left one): the first clear rise after the quiet part.
-        var first = -1
-        for (i in quiet until frames) if (smooth[i] > max(noise * 8, 30.0)) { first = i; break }
-        if (first < 0) return emptyList()
-        val firstOnset = onset(smooth, max(0, first - search / 4), min(frames, first + search)) ?: return emptyList()
-        val result = ArrayList<Double>()
-        for (p in 0 until PAIRS) {
-            val leftDue = firstOnset + p * pairFrames
-            val rightDue = leftDue + gapFrames
-            val l = onset(smooth, max(0, leftDue - search), min(frames, leftDue + search)) ?: continue
-            val r = onset(smooth, max(0, rightDue - search), min(frames, rightDue + search)) ?: continue
-            result += (r - l - gapFrames) * 1000.0 / RATE
-        }
-        return result
-    }
-
-    /** Where a click starts in [from, to): its envelope first reaching 30% of its peak there. */
-    private fun onset(x: DoubleArray, from: Int, to: Int): Int? {
-        if (to <= from) return null
-        var peak = 0.0
-        var at = from
-        for (i in from until to) if (x[i] > peak) { peak = x[i]; at = i }
-        if (peak <= 0) return null
-        for (i in from..at) if (x[i] >= peak * 0.3) return i
-        return at
     }
 
     private fun writeWav(f: File, d: ShortArray, n: Int, ch: Int) {

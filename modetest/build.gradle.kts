@@ -53,3 +53,14 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 }
+
+// SyncAnalysis is plain Kotlin: its unit tests run on the computer
+// (./gradlew :modetest:testDebugUnitTest), on made-up recordings and on real ones.
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+}
+
+// A real recording for SyncAnalysisTest: -Psync.wav=/path/cmf-sync.wav
+tasks.withType<Test>().configureEach {
+    (project.findProperty("sync.wav") as String?)?.let { systemProperty("sync.wav", it) }
+}

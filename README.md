@@ -63,6 +63,23 @@ Android 16, module v1.0.6)
   v1.0.81), and a tap on a result opens the "Stereo speakers" page inside Settings.
 
 **Not seen on the phone yet**
+- **SYNC TEST, second version, and the first result from the phone: in step.** Dr.Essence's
+  run said "the earpiece is 60 ms late"; his recording shows otherwise. By hand: 18 pairs, the
+  earpiece-to-speaker gap 249.48 ms every time (spread 0.00 ms) against 250 played, the 0.52 ms
+  being the earpiece's extra 15 cm to the bottom microphone (about 0.45 ms): **under 0.1 ms
+  apart, steady**. The one stream feeding both drivers keeps them together, as designed. Three
+  mistakes of the first version, now fixed, the timing moved to `SyncAnalysis` (plain Kotlin,
+  unit tests `./gradlew :modetest:testDebugUnitTest`, also on his recording with
+  `-Psync.wav=...`, which gives 18 pairs at -0.44 ms, spread 0.00, one misread pair left out):
+  the finger leaving START (the loudest sound in the file, before any click) was taken for the
+  first click; the room level was a mean that such a tap pulls up; a sound before the first
+  click (likely the route starting, at 1.51 s) became the only anchor. Now clicks are looked
+  for only after playback starts, through a 3 kHz band-pass, the room level is a median, every
+  early sound is tried as an anchor (left or right) and the best-aligned reading kept, and
+  pairs more than 5 ms from the median are left out and counted. His phone gives one
+  microphone on both channels (VOICE_RECOGNITION): the result now says so, with the distance
+  explanation, instead of claiming to cancel it. The music "tick... tock" (left, then right
+  250 ms later) is meant to be heard that way.
 - **CMF L/R Test: SYNC TEST** (new): do the earpiece and the speaker play at the same moment?
   Another CMF Phone 1 stereo project (lufrz's LineageOS tree) feeds the earpiece a stream of
   its own and delays it by a measured 72 ms; CMF True Stereo feeds both from one stream, so
