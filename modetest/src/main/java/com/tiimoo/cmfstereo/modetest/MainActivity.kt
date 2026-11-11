@@ -60,6 +60,12 @@ class MainActivity : Activity() {
             textSize = 16f
             setOnClickListener { startActivity(Intent(this@MainActivity, StudyActivity::class.java)) }
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 64 })
+        // SYNC TEST: do the earpiece and the speaker play at the same moment? (SyncActivity)
+        col.addView(Button(this).apply {
+            text = "SYNC TEST (about 15 s, phone flat on a table)"
+            textSize = 16f
+            setOnClickListener { startActivity(Intent(this@MainActivity, SyncActivity::class.java)) }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 32 })
         // The audio HAL records what it receives (vendor.streamout.pcm.dump) once
         // that property is set and the same key reaches it through
         // setParameters (AudioALSAHardware::setParameters -> dynamicSetAudioDump).

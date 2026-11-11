@@ -2,7 +2,8 @@ name: Build APK
 
 on:
   push:
-    branches: [main]
+    # main publishes (below); claude/* branches only build, into this run's artifacts.
+    branches: [main, 'claude/**']
   pull_request:
   workflow_dispatch:
 
@@ -65,8 +66,11 @@ jobs:
             VER=$(grep -m1 versionName $DIR/output-metadata.json | cut -d'"' -f4 || echo unknown)
             cp $DIR/app-$ED-release.apk "out/CMF-true-stereo-$ED-v${VER}-${SHA}.apk"
           done
-          # The left/right test app (one beep per Dirac tuning).
-          cp modetest/build/outputs/apk/release/modetest-release.apk "out/CMF-LR-test-${SHA}.apk"
+          # The left/right test app: a developer tool, never published. It goes to its
+          # own folder, which only the "lr-test" artifact below uploads (the releases
+          # upload out/ only).
+          mkdir -p test-out
+          cp modetest/build/outputs/apk/release/modetest-release.apk "test-out/CMF-LR-test-${SHA}.apk"
           echo "VER=$VER" >> "$GITHUB_ENV"
           ls -l out
 
@@ -74,6 +78,12 @@ jobs:
         with:
           name: apk
           path: out/*.apk
+
+      # CMF L/R Test: in this run's artifacts only (a GitHub login to download).
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lr-test
+          path: test-out/*.apk
 
       # Actions artifacts need a login to download and expire after 90 days.
       # A rolling prerelease gives every main build a permanent, public URL.

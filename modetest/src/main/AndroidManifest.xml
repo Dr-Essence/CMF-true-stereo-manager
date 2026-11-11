@@ -60,6 +60,9 @@
         <!-- DRIVER STUDY: upright, so neither Android nor the module swaps. -->
         <activity android:name=".StudyActivity" android:exported="false"
             android:process=":study" android:screenOrientation="portrait" />
+        <!-- SYNC TEST: upright, as the driver study, so left is the earpiece throughout. -->
+        <activity android:name=".SyncActivity" android:exported="false"
+            android:process=":sync" android:screenOrientation="portrait" />
         <!-- MP3 decoded by the audio DSP (compressed offload), as music players do. -->
         <activity android:name=".OffloadTest" android:exported="false"
             android:process=":offload" android:screenOrientation="sensorLandscape" />

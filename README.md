@@ -63,6 +63,21 @@ Android 16, module v1.0.6)
   v1.0.81), and a tap on a result opens the "Stereo speakers" page inside Settings.
 
 **Not seen on the phone yet**
+- **CMF L/R Test: SYNC TEST** (new): do the earpiece and the speaker play at the same moment?
+  Another CMF Phone 1 stereo project (lufrz's LineageOS tree) feeds the earpiece a stream of
+  its own and delays it by a measured 72 ms; CMF True Stereo feeds both from one stream, so
+  they should be in step by design. The test measures it: phone upright and flat (no swap:
+  left is the earpiece), 20 pairs of 2 ms 3 kHz clicks, left then right 250 ms later in the
+  same stream, both microphones timing each click (where its envelope first reaches 30% of
+  its peak); offset = measured gap - 250 ms, per microphone, and their mean, which cancels
+  the microphones' distance to each driver. Checked before the build on synthetic
+  recordings with a known answer (0, +3 and -2 ms, room noise, reverb, a quieter earpiece,
+  0.45 ms of distance each way): the two microphones' mean gave -0.00, +2.98 and -2.01 ms.
+  Results on screen, /sdcard/cmf-sync.txt and the recording /sdcard/cmf-sync.wav.
+- **CMF L/R Test stays out of releases** (Dr.Essence: a developer tool, Actions only): its
+  APK is built into its own "lr-test" artifact; the rolling and tagged releases upload only
+  the two editions. Pushes to `claude/*` branches now build too (artifacts only, nothing is
+  published: publishing stays on main).
 - **v1.0.97-beta, Pro warns before lowering the speaker's margin.** Stereo attenuation under 6 dB
   (the margin CMF Stereo never goes below) now asks first, and a red line under the field
   says what is at stake: with the module's protection running, its limiter still holds the
