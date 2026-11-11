@@ -110,7 +110,7 @@ class SyncActivity : Activity() {
         }
         go.isEnabled = false
         busy = true
-        Thread({ run() }, "sync").start()
+        Thread({ if (Countdown.wait(::say)) run() else busy = false }, "sync").start()
     }
 
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, res: IntArray) {

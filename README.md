@@ -63,6 +63,18 @@ Android 16, module v1.0.6)
   v1.0.81), and a tap on a result opens the "Stereo speakers" page inside Settings.
 
 **Not seen on the phone yet**
+- **CMF L/R Test: RECORD ONLY, and a 5-second countdown before every test** (Dr.Essence:
+  time to make silence and set up). RECORD ONLY runs on any device without root (his S22
+  Ultra and Legion Tab) and changes nothing there: it records its own microphone (UNPROCESSED
+  where offered, else VOICE_RECOGNITION; two channels if given; 48 kHz float) while the CMF
+  plays the RESPONSE STUDY, shows the level live, and saves cmf-record-<device>-<time>.wav
+  and .txt to Download. Several devices' microphones colour the sound differently while the
+  speakers' sound is the same in each: where they agree is the speakers. (No algorithm can
+  separate a speaker from an unknown microphone exactly: a recording is the product of both;
+  a calibrated microphone such as a Dayton iMM-6C would remove the last of it.) The countdown
+  (`Countdown`) runs before the beep tests, DRIVER STUDY, SYNC TEST, RESPONSE STUDY, RECORD
+  ONLY and once at the start of FULL CHECK (not per test there: it runs them on a timer).
+  Compiled; not run yet.
 - **CMF L/R Test: RESPONSE STUDY** (new, for the EQ; Dr.Essence: "measure every single
   detail and every frequency"; the EQ must stay clean and never change the frequencies in the
   music). Each driver alone, in Stereo, upright, media volume at maximum: an exponential sine

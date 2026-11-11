@@ -60,6 +60,12 @@ class MainActivity : Activity() {
             textSize = 16f
             setOnClickListener { startActivity(Intent(this@MainActivity, StudyActivity::class.java)) }
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 64 })
+        // RECORD ONLY: on a second device, its microphone listening to the RESPONSE STUDY.
+        col.addView(Button(this).apply {
+            text = "RECORD ONLY (on another device, no root)"
+            textSize = 16f
+            setOnClickListener { startActivity(Intent(this@MainActivity, RecordOnlyActivity::class.java)) }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 32 })
         // RESPONSE STUDY: every frequency of each driver, for the EQ (SweepActivity).
         col.addView(Button(this).apply {
             text = "RESPONSE STUDY (about 1 min, phone flat on a table)"
@@ -117,6 +123,8 @@ class MainActivity : Activity() {
                 isEnabled = false
                 status.text = "Running: MUSIC, MOVIE, GAME, SPEECH... keep the phone still."
                 Thread {
+                    Countdown.wait({ msg -> runOnUiThread { status.text = msg } })
+                    runOnUiThread { status.text = "Running: MUSIC, MOVIE, GAME, SPEECH... keep the phone still." }
                     val am = getSystemService(AudioManager::class.java)
                     val r = su("rm -rf /data/vendor/audiohal/audio_dump; " +
                         "resetprop vendor.streamout.pcm.dump 1 && resetprop vendor.streamout.dsp.dump 1 && " +

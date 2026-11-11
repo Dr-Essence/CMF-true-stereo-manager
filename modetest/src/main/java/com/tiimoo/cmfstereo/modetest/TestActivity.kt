@@ -152,6 +152,9 @@ abstract class TestActivity(
 
     private fun play() {
         try {
+            // FULL CHECK (autoMs) counts down once for all its tests; a test opened by hand waits here.
+            if (intent.getLongExtra("autoMs", 0L) == 0L && !Countdown.wait({ how = it }, { playing })) return
+            how = ""
             when (kind) {
                 Kind.PCM16, Kind.FLOAT -> playTrack()
                 Kind.AAUDIO, Kind.AAUDIO_SHARED -> {

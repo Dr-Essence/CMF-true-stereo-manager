@@ -103,7 +103,7 @@ class StudyActivity : Activity() {
         }
         go.isEnabled = false
         busy = true
-        Thread({ run() }, "study").start()
+        Thread({ if (Countdown.wait(::say)) run() else busy = false }, "study").start()
     }
 
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, res: IntArray) {

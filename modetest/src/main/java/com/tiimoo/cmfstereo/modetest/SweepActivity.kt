@@ -115,7 +115,7 @@ class SweepActivity : Activity() {
         }
         go.isEnabled = false
         busy = true
-        Thread({ run() }, "sweep").start()
+        Thread({ if (Countdown.wait(::say)) run() else busy = false }, "sweep").start()
     }
 
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, res: IntArray) {

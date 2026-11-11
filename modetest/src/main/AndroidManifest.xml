@@ -60,6 +60,9 @@
         <!-- DRIVER STUDY: upright, so neither Android nor the module swaps. -->
         <activity android:name=".StudyActivity" android:exported="false"
             android:process=":study" android:screenOrientation="portrait" />
+        <!-- RECORD ONLY: any device, its own microphone; no special orientation. -->
+        <activity android:name=".RecordOnlyActivity" android:exported="false"
+            android:process=":record" />
         <!-- RESPONSE STUDY: upright, so left is the earpiece throughout. -->
         <activity android:name=".SweepActivity" android:exported="false"
             android:process=":sweep" android:screenOrientation="portrait" />
